@@ -20,7 +20,7 @@ git clone https://github.com/OAID/AutoKernel.git
 ```
 cd AutoKernel/autokernel_plugin
 chmod +x -R .
-./script/generate.sh  #自动生成算子汇编文件
+./scripts/generate.sh  #自动生成算子汇编文件
 ```
 一键编译 `libAutoKernel.so`
 ```
