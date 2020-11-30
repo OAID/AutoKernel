@@ -4,4 +4,4 @@ g++ im2col_conv_gen.cc ../../common/GenGen.cpp \
 	-lHalide -std=c++11 -fno-rtti \
 	-o im2col_conv_gen
 
-./im2col_conv_gen -g halide_im2col_conv -e c_header,assembly -o . target=host-no_runtime-no_asserts-no_bounds_query transpose_A=false transpose_B=false
+./im2col_conv_gen -g halide_im2col_conv -e c_header,assembly -o . target=host-no_runtime-no_asserts-no_bounds_query

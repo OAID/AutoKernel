@@ -259,7 +259,7 @@ static int run(struct node_ops* node_ops, struct exec_node* exec_node, struct ex
 		    Halide::Runtime::Buffer<float> filter_data((float*)conv_priv_info->interleave_buffer, K, M);
 		    Halide::Runtime::Buffer<float> output_data((float*)output_tensor->data, N, M);
 		    Halide::Runtime::Buffer<float> input_data((float*)conv_priv_info->im2col_buffer, N, K);
-		    halide_im2col_conv(1, filter_data, input_data, 0, output_data, output_data);
+		    halide_im2col_conv(filter_data, input_data, output_data);
 		}
 	    }
 	}
