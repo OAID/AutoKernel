@@ -1,1 +1,0 @@
-/usr/bin/c++  -Wno-overloaded-virtual -std=c++11 -rdynamic -ldl -rdynamic CMakeFiles/test_pool.dir/test_pool.cpp.o -o test_pool   -L/workspace/Tengine/build/install/lib  -Wl,-rpath,/workspace/Tengine/build/install/lib -ltengine-lite 

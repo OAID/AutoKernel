@@ -1,1 +1,0 @@
-/usr/bin/c++  -Wno-overloaded-virtual -std=c++11 -rdynamic -ldl -rdynamic CMakeFiles/tm_classification.dir/tm_classification.cpp.o CMakeFiles/tm_classification.dir/common/tengine_operations.cpp.o -o tm_classification   -L/workspace/Tengine/build/install/lib  -Wl,-rpath,/workspace/Tengine/build/install/lib -ltengine-lite 
