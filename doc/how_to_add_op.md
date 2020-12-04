@@ -1,9 +1,9 @@
 ## 如何快速开发一个自动优化的新算子
 
-运用AutoKernel开发一个Tengine可以用算子，具体可分为两个步骤：
-1. 生成：编写算法描述和调度策略，生成相应后端的优化算子代码
+运用AutoKernel开发一个Tengine框架可用的算子的具体步骤分为以下两步：
+1. 生成：编写算法描述和调度策略，生成目标后端的优化算子代码
    
-2. 部署：将生成的优化算子代码通过plugin的形式集成进Tengine
+2. 部署：将生成的优化算子代码通过plugin的形式集成进Tengine框架
 
 --------------------------
 本教程将以Relu算子为例，演示如何快速开发Tengine可用的自动优化算子。
@@ -123,12 +123,12 @@ int main(int argc, char **argv)
     return 0;
 }
 ```
-把该测试代码`test_relu.cpp`放在 AutoKernel/autokernel_plugin/build/目录下，然后编译测试用例:
+将该测试代码`test_relu.cpp`移至` AutoKernel/autokernel_plugin/build/`目录下后，通过如下命令行编译测试用例:
 
 ```
 g++ test_relu.cpp ../src/relu/halide_relu.s -I ../include/ -I ../src/relu/ -std=c++11 -lpthread -ldl -O3 -o relu_run
 ```
-执行得到结果
+运行获得测试结果
 ```
 ./relu_run
 input:
