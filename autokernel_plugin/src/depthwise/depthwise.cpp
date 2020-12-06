@@ -39,13 +39,14 @@ static int run(struct node_ops* node_ops, struct exec_node* exec_node, struct ex
         int stride = conv_param->stride_h;
         int pad_width = conv_param->pad_w0;
         int pad_height = conv_param->pad_h0;
+	int act = conv_param->activation;
 
         Halide::Runtime::Buffer<float> input(input_buf, input_tensor->dims[3], input_tensor->dims[2], input_tensor->dims[1], input_tensor->dims[0]);
         Halide::Runtime::Buffer<float> filter(weight_buf, weight_tensor->dims[3], weight_tensor->dims[2], weight_tensor->dims[1], weight_tensor->dims[0]);
         Halide::Runtime::Buffer<float> output(output_buf, output_tensor->dims[3], output_tensor->dims[2], output_tensor->dims[1], output_tensor->dims[0]);
         Halide::Runtime::Buffer<float> bias1(bias, output_tensor->dims[1]);
 
-        halide_depthwise(input, filter, bias1, stride, pad_width, pad_height, output);
+        halide_depthwise(input, filter, bias1, stride, pad_width, pad_height, act, output);
     }
     else
     {

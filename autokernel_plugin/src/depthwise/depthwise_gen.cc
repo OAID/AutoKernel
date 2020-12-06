@@ -16,6 +16,7 @@ public:
     Input<int> stride{"stride"};
     Input<int> pad_width{"pad_width"};
     Input<int> pad_height{"pad_height"};
+    Input<int> act{"act"};
 
     Output<Buffer<float>> output{"output", 4};
 
@@ -41,7 +42,7 @@ public:
         conv_nchw(x, y, depth, n) +=
             kernel(filter_dom.x, filter_dom.y, depth, 0) *
              inp_padded(x * stride + filter_dom.x, y * stride + filter_dom.y, depth, n);
-	output(x, y, depth, n) = conv_nchw(x, y, depth, n);
+	output(x, y, depth, n) = select(act >= 0, max(act, conv_nchw(x, y, depth, n)), conv_nchw(x, y, depth, n));
     }
 
     void schedule()

@@ -60,7 +60,7 @@ AutoKernel提供了docker镜像，提供了AutoKernel的开发环境
 至此，我们后面所需的环境文件都已经准备完毕。
 
 ## Halide
-Halide 是一个DSL编程语言，它将算法和硬件后端进行了分离。本项目将使用Halide的DSL 以及IR。docker里面已经安装好Halide， 并且配置好了Python的API。
+Halide 是一个DSL编程语言，他将算法和硬件后端分离了。本项目将使用Halide的DSL 以及IR。docker里面已经安装好Halide， 并且配置好了Python的API。
 
 Halide相关的文件都在`/workspace/Halide/`文件夹下，Halide的安装文件都在`/workspace/Halide/halide-build` 文件夹下。
 
