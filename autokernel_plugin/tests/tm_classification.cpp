@@ -171,7 +171,7 @@ bool run_tengine_library(const char* model_name, const char* tm_file, const char
     //opt.cluster = TENGINE_CLUSTER_LITTLE;
     opt.precision = TENGINE_MODE_FP32;
 
-    const char * plugin_file="/workspace/AutoKernel/autokernel_plugin/build/src/libautokernel.so";
+    const char * plugin_file="libautokernel.so";
 
     if(load_tengine_plugin("autokernel", plugin_file, "autokernel_plugin_init")<0)
     {

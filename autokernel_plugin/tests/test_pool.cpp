@@ -222,7 +222,7 @@ int test_pool(int in_c, int h, int w, int ksize, int stride, int pad, int pool_m
 
 int main(int argc, char* argv[])
 {
-    const char * plugin_file="/workspace/AutoKernel/autokernel_plugin/build/src/libautokernel.so";
+    const char * plugin_file="libautokernel.so";
     
     if(load_tengine_plugin("autokernel", plugin_file, "autokernel_plugin_init")<0)
     {

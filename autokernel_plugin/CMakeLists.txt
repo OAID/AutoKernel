@@ -1,12 +1,13 @@
 project(AutoKernel)
 
-set(TENGINE_ROOT /workspace/Tengine)
+set(TENGINE_ROOT /path/Tengine)
 
 if(NOT DEFINED TENGINE_ROOT)
     message(FATAL_ERROR "please set TENGINE_ROOT for tengine directory")
 endif()
 
-#set(TENGINE_LIBRARY ${TENGINE_ROOT}/build/install/lib/libtengine-lite.so)
+set(TENGINE_DIR /path/tengine-install)
+set(TENGINE_LIBRARY ${TENGINE_DIR}/lib/libtengine-lite.so)
 
 cmake_minimum_required(VERSION 3.0)
 
