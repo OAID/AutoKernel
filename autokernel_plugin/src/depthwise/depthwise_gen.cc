@@ -56,6 +56,7 @@ public:
             stride.set_estimate(1);
             pad_width.set_estimate(1);
             pad_height.set_estimate(1);
+            output.set_estimates({{0, 512}, {0, 512}, {0, 512}, {0, 1}});
         }
     }
 };

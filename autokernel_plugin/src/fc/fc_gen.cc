@@ -31,7 +31,13 @@ public:
 
     void schedule()
     {
-	/* THE SCHEDULE */
+	    /* THE SCHEDULE */
+        input.set_estimates({{0, 512}, {0, 512}});
+        kernel.set_estimates({{0, 512}, {0, 512}});
+        bias.set_estimates({{0, 512}});
+
+        hidden.set_estimate(1);
+        output.set_estimates({{0, 512}, {0, 512}});
 	
     }
 };
