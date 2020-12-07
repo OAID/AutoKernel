@@ -42,18 +42,19 @@ static int run(struct node_ops* node_ops, struct exec_node* exec_node, struct ex
     if(ir_node->input_num > 2)
 	bias = (float*)(bias_tensor->data);
 
-    if(exec_graph->mode == TENGINE_MODE_FP32){
-	int hidden = weight_tensor->dims[1];
-    
-    	Halide::Runtime::Buffer<float> input(input_buf, input_tensor->dims[1], input_tensor->dims[0]);
+    if(exec_graph->mode == TENGINE_MODE_FP32)
+    {
+        Halide::Runtime::Buffer<float> input(input_buf, input_tensor->dims[1], input_tensor->dims[0]);
         Halide::Runtime::Buffer<float> weight(weight_buf, weight_tensor->dims[1], weight_tensor->dims[0]);  
         Halide::Runtime::Buffer<float> output(output_buf, output_tensor->dims[1], output_tensor->dims[0]);
 	Halide::Runtime::Buffer<float> bias1(bias, output_tensor->dims[1]);
 
+        printf("[INFO]:using halide fc...\n");
+
 	if(info_autokernel)
             printf("[INFO]: runing Autokernel halide_fc...\n");
 
-        halide_fc(input, weight, bias1, hidden, output);
+        halide_fc(input, weight, bias1, output);
     }
     else
     {

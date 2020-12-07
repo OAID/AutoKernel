@@ -11,6 +11,9 @@ set(CMAKE_EXE_LINKER_FLAGS "-rdynamic -ldl")
 add_executable(test_conv test_conv.cpp)
 target_link_libraries(test_conv ${LINK_LIBS})
 
+add_executable(test_fc test_fc.cpp)
+target_link_libraries(test_fc ${LINK_LIBS})
+
 add_executable(test_pool test_pool.cpp)
 target_link_libraries(test_pool ${LINK_LIBS})
 
