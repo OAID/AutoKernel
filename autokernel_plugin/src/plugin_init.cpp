@@ -2,10 +2,12 @@
 #include "pool/pool.h"
 #include "direct_conv/direct_conv.h"
 #include "im2col_conv/im2col_conv.h"
+#include "fc/fc.h"
 
 extern "C" int autokernel_plugin_init(void)       
 {                                      
     /* register halide operator */     
+    RegisterAutoKernelFc();
     RegisterAutoKernelPool();
     RegisterAutoKernelDirect_conv();
     RegisterAutoKernelIm2col_conv();

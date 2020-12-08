@@ -1,1 +1,3 @@
 *.s
+.vscode
+build
