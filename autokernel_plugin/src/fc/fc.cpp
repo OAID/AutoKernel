@@ -23,7 +23,7 @@ static int run(struct node_ops* node_ops, struct exec_node* exec_node, struct ex
     if((debug_env) && (debug_env[0] == '1'))
     {
         info_autokernel = true;
-    }
+    } 
     // step 1: get input and output
     struct ir_node* ir_node = exec_node->ir_node;
     struct ir_graph* ir_graph = ir_node->graph;
@@ -51,9 +51,6 @@ static int run(struct node_ops* node_ops, struct exec_node* exec_node, struct ex
 
         printf("[INFO]:using halide fc...\n");
 
-	if(info_autokernel)
-            printf("[INFO]: runing Autokernel halide_fc...\n");
-
         halide_fc(input, weight, bias1, output);
     }
     else
@@ -72,20 +69,11 @@ static int reshape(struct node_ops* node_ops, struct exec_node* exec_node, struc
 
 static int postrun(struct node_ops* node_ops, struct exec_node* exec_node, struct exec_graph* exec_graph)
 {
-    /*
-    release the helper memory you 
-    */
     return 0;
 }
 
 static int init_node(struct node_ops* node_ops, struct exec_node* exec_node, struct exec_graph* exec_graph)
 {
-    /* 
-    init the private info data for your op:
-    void ops_priv;
-    int shared_mem_size;
-    int shared_pack4_mem_size;
-    */
     return 0;
 }
 
@@ -135,4 +123,3 @@ void RegisterAutoKernelFc()
 {
     register_norm_module_init(2, "reg_autokernel_ops", reg_autokernel_ops, NULL);
 }
-

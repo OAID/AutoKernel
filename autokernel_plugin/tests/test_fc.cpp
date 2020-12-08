@@ -67,8 +67,7 @@ int create_fc_node(graph_t graph, const char* node_name, const char* input_name,
     set_node_input_tensor(fc_node, 0, input_tensor);
     release_graph_tensor(input_tensor);
 
-    /* output */
-    tensor_t output_tensor = create_graph_tensor(graph, node_name, TENGINE_DT_FP32);
+    /* output */ tensor_t output_tensor = create_graph_tensor(graph, node_name, TENGINE_DT_FP32);
     set_node_output_tensor(fc_node, 0, output_tensor, TENSOR_TYPE_VAR);
 
     release_graph_tensor(output_tensor);
