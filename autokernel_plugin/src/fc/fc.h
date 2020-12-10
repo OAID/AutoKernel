@@ -12,14 +12,12 @@ extern "C"
     #include "../../dev/cpu/cpu_node_ops.h" 
 
     // include op param header file here, locate in src/op/
-    #include "pooling_param.h"
-    #include "module.h"
+    #include "fc_param.h"
 }
                                             
 #include "HalideBuffer.h"
 
 // include the c_header file here
-#include "halide_maxpool.h"
-#include "halide_avepool.h"
+#include "halide_fc.h"
 
-void RegisterAutoKernelPool();
+void RegisterAutoKernelFc();
