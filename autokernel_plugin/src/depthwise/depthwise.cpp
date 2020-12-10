@@ -40,11 +40,14 @@ static int run(struct node_ops* node_ops, struct exec_node* exec_node, struct ex
         int pad_width = conv_param->pad_w0;
         int pad_height = conv_param->pad_h0;
 	int act = conv_param->activation;
+        int group = conv_param->group;
 
         Halide::Runtime::Buffer<float> input(input_buf, input_tensor->dims[3], input_tensor->dims[2], input_tensor->dims[1], input_tensor->dims[0]);
         Halide::Runtime::Buffer<float> filter(weight_buf, weight_tensor->dims[3], weight_tensor->dims[2], weight_tensor->dims[1], weight_tensor->dims[0]);
         Halide::Runtime::Buffer<float> output(output_buf, output_tensor->dims[3], output_tensor->dims[2], output_tensor->dims[1], output_tensor->dims[0]);
         Halide::Runtime::Buffer<float> bias1(bias, output_tensor->dims[1]);
+
+	printf("using halide depthwise conv...\n");
 
         halide_depthwise(input, filter, bias1, stride, pad_width, pad_height, act, output);
     }
@@ -93,14 +96,46 @@ static int release_node(struct node_ops* node_ops, struct exec_node* exec_node, 
 
 static int score(struct node_ops* node_ops, struct exec_graph* exec_graph, struct ir_node* exec_node)
 {
-    /*
-    OPS_SCORE_STATIC 10000
-    OPS_SCORE_BEST 8000
-    OPS_SCORE_PREFER 6000
-    OPS_SCORE_CANDO 4000
-    OPS_SCORE_NOTSUP 2000
-    */
-    return OPS_SCORE_STATIC;
+    struct conv_param* param = ( struct conv_param* )exec_node->op.param_mem;
+    struct ir_node* ir_node = exec_node;
+    struct ir_graph* ir_graph = ir_node->graph;
+
+    struct ir_tensor* input_tensor;
+    struct ir_tensor* output_tensor;
+
+    int group = param->group;
+    int kernel_h = param->kernel_h;
+    int kernel_w = param->kernel_w;
+    int stride_h = param->stride_h;
+    int stride_w = param->stride_w;
+    int dilation_h = param->dilation_h;
+    int dilation_w = param->dilation_w;
+    int pad_h0 = param->pad_h0;
+    int pad_w0 = param->pad_h0;
+    int pad_h1 = param->pad_h1;
+    int pad_w1 = param->pad_w1;
+
+    input_tensor = get_ir_graph_tensor(ir_graph, ir_node->input_tensors[0]);
+    output_tensor = get_ir_graph_tensor(ir_graph, ir_node->output_tensors[0]);
+  
+    int in_c = input_tensor->dims[1] / group;
+    int out_c = input_tensor->dims[1] / group;
+
+    if (input_tensor->data_type != TENGINE_DT_FP32)
+	return 0;
+    if (kernel_h != kernel_w || input_tensor->dims[0] > 1)
+	return 0;
+    
+    if (param->group > 1 && in_c == 1 && in_c == 1 && pad_h0 == pad_h1 && pad_w0 == pad_w1 
+       && dilation_h == 1 && dilation_w == 1 && kernel_h == 3 && kernel_w == 3
+       && ((stride_h == 1 && stride_w == 1) || (stride_w == 2 && stride_h == 2)))
+    {    
+        return OPS_SCORE_STATIC;
+    }
+    else
+    {
+	return 0;
+    }
 }
 
 static struct node_ops autokernel_node_ops = {.prerun = prerun,

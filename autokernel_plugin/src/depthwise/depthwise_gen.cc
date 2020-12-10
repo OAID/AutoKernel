@@ -40,7 +40,7 @@ public:
 
         conv_nchw(x, y, depth, n) = bias(depth);
         conv_nchw(x, y, depth, n) +=
-            kernel(filter_dom.x, filter_dom.y, depth, 0) *
+            kernel(filter_dom.x, filter_dom.y, 0, depth) *
              inp_padded(x * stride + filter_dom.x, y * stride + filter_dom.y, depth, n);
 	output(x, y, depth, n) = select(act >= 0, max(act, conv_nchw(x, y, depth, n)), conv_nchw(x, y, depth, n));
     }

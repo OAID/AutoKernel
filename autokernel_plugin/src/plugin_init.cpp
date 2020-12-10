@@ -3,10 +3,12 @@
 #include "direct_conv/direct_conv.h"
 #include "im2col_conv/im2col_conv.h"
 #include "fc/fc.h"
+#include "depthwise/depthwise.h"
 
 extern "C" int autokernel_plugin_init(void)       
 {                                      
     /* register halide operator */     
+    RegisterAutoKernelDepthwise();
     RegisterAutoKernelFc();
     RegisterAutoKernelPool();
     RegisterAutoKernelDirect_conv();
