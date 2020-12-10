@@ -71,15 +71,16 @@ static int run(struct node_ops* node_ops, struct exec_node* exec_node, struct ex
         if (pool_param->pool_method == 0)
         {
             // maxpooling
-            printf("[INFO]: using halide maxpooling....\n");
             halide_maxpool(input, stride, pad_width, pad_height, kernel_w, kernel_h, output);
+            if(info_autokernel)printf("[INFO]: runing Autokernel halide_maxpool...\n");
         }
         else if (pool_param->pool_method == 1)
         {
             // average pooling
             halide_avepool(input, stride, pad_width, pad_height, kernel_w, kernel_h, output);
+            if(info_autokernel)printf("[INFO]: runing Autokernel halide_avgpool...\n");
         }
-        if(info_autokernel)printf("[INFO]: runing Autokernel halide_pool...\n");
+        
     }
     else
     {
