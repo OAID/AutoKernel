@@ -17,5 +17,8 @@ target_link_libraries(test_fc ${LINK_LIBS})
 add_executable(test_pool test_pool.cpp)
 target_link_libraries(test_pool ${LINK_LIBS})
 
+add_executable(test_softmax test_softmax.cpp)
+target_link_libraries(test_softmax ${LINK_LIBS})
+
 add_executable(tm_classification tm_classification.cpp common/tengine_operations.cpp)
 target_link_libraries (tm_classification ${LINK_LIBS})
