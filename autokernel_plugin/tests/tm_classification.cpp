@@ -35,7 +35,7 @@
 #include "tengine_c_api.h"
 #include "common.hpp"
 
-#define DEFAULT_MODEL_NAME "squeezenet"
+#define DEFAULT_MODEL_NAME "mobilenet_v1_0_75_tflow"
 #define DEFAULT_IMAGE_FILE "images/cat.jpg"
 #define DEFAULT_LABEL_FILE "models/synset_words.txt"
 #define DEFAULT_IMG_H 227

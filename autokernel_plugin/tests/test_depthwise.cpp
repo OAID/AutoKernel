@@ -187,10 +187,15 @@ int test_conv(int in_c, int out_c, int h, int w, int ksize, int stride, int pad,
     int buf_size = get_tensor_buffer_size(input_tensor);
     float* i_buf = ( float* )malloc(buf_size);
     srand(time(0));
+    printf("input:\n ");
     for(unsigned int i = 0; i < buf_size / sizeof(float); i++)
     {
         i_buf[i] = i%10;//rand() % 10;
+	std::cout << i_buf[i] << " ";
+	if ((i + 1) % h == 0)
+	    std::cout << std::endl;
     }
+    std::cout << std::endl;
 
     set_tensor_buffer(input_tensor, i_buf, buf_size);
     release_graph_tensor(input_tensor);
@@ -203,10 +208,15 @@ int test_conv(int in_c, int out_c, int h, int w, int ksize, int stride, int pad,
     buf_size = get_tensor_buffer_size(weight_tensor);
     float* w_buf = ( float* )malloc(buf_size);
 
+    printf("weight: \n");
     for(unsigned int i = 0; i < buf_size / sizeof(float); i++)
     {
         w_buf[i] = i%5;//rand() % 10;
+    	std::cout << w_buf[i] << " ";
+	if ((i + 1) % ksize == 0)
+	    std::cout << std::endl;
     }
+    std::cout << std::endl;
 
     set_tensor_buffer(weight_tensor, w_buf, buf_size);
 
@@ -224,10 +234,15 @@ int test_conv(int in_c, int out_c, int h, int w, int ksize, int stride, int pad,
         buf_size = get_tensor_buffer_size(bias_tensor);
         b_buf = ( float* )malloc(buf_size);
 
+	printf("bias: \n");
         for(unsigned int i = 0; i < buf_size / sizeof(float); i++)
         {
             b_buf[i] = 0;
+            std::cout << b_buf[i] << " ";
+            if ((i + 1) % out_c == 0)
+		std::cout << std::endl;
         }
+        std::cout << std::endl;
 
         set_tensor_buffer(bias_tensor, b_buf, buf_size);
         release_graph_tensor(bias_tensor);
@@ -261,23 +276,23 @@ int test_conv(int in_c, int out_c, int h, int w, int ksize, int stride, int pad,
     // if(float_mismatch(buf, buf1, size/sizeof(float)) != 0)
     //     printf("test failed\n");
     std::cout<<"print output data\n";
-    for(int i = 0; i < 14; i++)
+/*    for(int i = 0; i < 14; i++)
     {
         std::cout<<buf[i]<<" ";
     }
     std::cout<<"\n";
-
-/*    for(int c = 0; c < out_c;c++)
+*/
+    for(int c = 0; c < out_c;c++)
     {
         for(int oh = 0; oh < h; oh++)
         {
             for(int ow = 0; ow < w; ow++)
-            std::cout<<buf[ow + oh * w + c * h * w]<<" ";
+                 std::cout<<buf[ow + oh * w + c * h * w]<<" ";
             std::cout<<"\n";
         }
         std::cout<<"\n";
     }
-*/
+
     release_graph_tensor(output_tensor);
     release_graph_node(conv_node);
     postrun_graph(graph);
@@ -306,7 +321,7 @@ int main(int argc, char* argv[])
     printf("init_tengine done\n");
     
     // in_c, out_c, in_h, out_h, k, s, p, group, act
-    test_conv(2, 2, 56, 56, 3, 1, 0, 2, 0);
+    test_conv(2, 2, 5, 5, 3, 1, 1, 2, 0);
 
 
     release_tengine();

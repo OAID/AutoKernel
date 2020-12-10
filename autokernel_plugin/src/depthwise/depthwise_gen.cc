@@ -34,15 +34,13 @@ public:
         Func inp_padded("inp_padded");
         inp_padded(x, y, depth, n) = input_bounded(x - pad_width, y - pad_height, depth, n);
 
-        Func conv_nchw("conv_nchw");
-        
+        Func conv_nchw("conv_nchw");        
         RDom filter_dom(0, kernel.dim(0).extent(), 0, kernel.dim(1).extent()); 
 
         conv_nchw(x, y, depth, n) = bias(depth);
-        conv_nchw(x, y, depth, n) +=
-            kernel(filter_dom.x, filter_dom.y, 0, depth) *
-             inp_padded(x * stride + filter_dom.x, y * stride + filter_dom.y, depth, n);
-	output(x, y, depth, n) = select(act >= 0, max(act, conv_nchw(x, y, depth, n)), conv_nchw(x, y, depth, n));
+        conv_nchw(x, y, depth, n) += kernel(filter_dom.x, filter_dom.y, 0, depth) *
+             inp_padded(x * stride + filter_dom.x, y * stride + filter_dom.y, depth, n);		
+       output(x, y, depth, n) = select(act >= 0, max(act, conv_nchw(x, y, depth, n)), conv_nchw(x, y, depth, n));
     }
 
     void schedule()
