@@ -1,8 +1,8 @@
 project(test)                                                    
                                                                         
-include_directories(${TENGINE_ROOT}/include)
+include_directories(${TENGINE_DIR}/include)
 include_directories(./common)
-link_directories(${TENGINE_ROOT}/build/install/lib)
+link_directories(${TENGINE_DIR}/lib)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 set(LINK_LIBS tengine-lite)

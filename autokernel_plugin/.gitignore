@@ -1,0 +1,5 @@
+build/
+.vscode/
+halide_*
+*_gen
+
