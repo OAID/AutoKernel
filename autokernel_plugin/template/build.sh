@@ -1,6 +1,6 @@
 g++ OP_NAME_gen.cc ../../common/GenGen.cpp \
-	-I /workspace/Halide/halide-build/include/ \
-	-L /workspace/Halide/halide-build/src \
+	-I ${HALIDE_DIR}/include \
+	-L ${HALIDE_DIR}/lib \
 	-lHalide -std=c++11 -fno-rtti \
 	-o OP_NAME_gen
 

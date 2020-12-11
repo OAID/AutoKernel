@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string>
-
+#include "utils.hpp" //is_file_exist
 /* the sample code to create a pooling and do calculation */
 
 #include "tengine_c_api.h"
@@ -12,29 +12,6 @@ static inline unsigned long get_cur_time(void)
     clock_gettime(CLOCK_MONOTONIC, &tm);
 
     return (tm.tv_sec * 1000000 + tm.tv_nsec / 1000);
-}
-
-int float_mismatch(float* a, float* b, int size)
-{
-    int i =0;
-
-    for(i=0;i<size;i++)
-    {
-        float off = a[i] - b[i];
-        if(off!=0)
-        {
-            std::cout <<"mismatch:\t["<<i<<"]\ta:"<<a[i] <<"\tb:"<<b[i]<<"\toff:"<<a[i]-b[i]<<"\n";
-            break;
-        }
-    }
-    if(i!= size)
-    {
-        printf("mismatch:\n\t[%d]\t---a:    %f ,%f   :b---        off: %f\n",i,a[i],b[i],a[i]-b[i]);
-        printf("fail\n");
-        return -1;
-    }
-    printf("pass\n");
-    return 0;
 }
 
 int create_input_node(graph_t graph, const char* node_name, int c, int h, int w)
@@ -222,9 +199,28 @@ int test_pool(int in_c, int h, int w, int ksize, int stride, int pad, int pool_m
 
 int main(int argc, char* argv[])
 {
-    const char * plugin_file="/workspace/AutoKernel/autokernel_plugin/build/src/libautokernel.so";
+    std::string plugin_file="libautokernel.so";
+    if(!is_file_exist(plugin_file))
+    {
+        if(is_file_exist("./build/src/"+plugin_file))
+        {
+            plugin_file="./build/src/libautokernel.so";
+        }
+        else if(is_file_exist("../src/"+plugin_file))
+        {
+            plugin_file="../src/libautokernel.so";
+        }
+        else if(is_file_exist("./src/"+plugin_file))
+        {
+            plugin_file="./src/libautokernel.so";
+        }
+        else
+        {
+            printf("libautokernel.so not existed.\n");
+        }
+    }
     
-    if(load_tengine_plugin("autokernel", plugin_file, "autokernel_plugin_init")<0)
+    if(load_tengine_plugin("autokernel", plugin_file.c_str(), "autokernel_plugin_init")<0)
     {
         printf("init autokernel plugin failed\n");
     }

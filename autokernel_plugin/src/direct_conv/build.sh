@@ -1,6 +1,6 @@
 g++ direct_conv_gen.cc ../../common/GenGen.cpp \
-	-I /workspace/Halide/halide-build/include/ \
-	-L /workspace/Halide/halide-build/src \
+	-I ${HALIDE_DIR}/include \
+	-L ${HALIDE_DIR}/lib \
 	-lHalide -std=c++11 -fno-rtti \
 	-o direct_conv_gen
 

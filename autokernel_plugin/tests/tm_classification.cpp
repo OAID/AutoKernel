@@ -34,6 +34,7 @@
 #include <algorithm>
 #include "tengine_c_api.h"
 #include "common.hpp"
+#include "utils.hpp" //is_file_exist
 
 #define DEFAULT_MODEL_NAME "squeezenet"
 #define DEFAULT_IMAGE_FILE "images/cat.jpg"
@@ -171,9 +172,28 @@ bool run_tengine_library(const char* model_name, const char* tm_file, const char
     //opt.cluster = TENGINE_CLUSTER_LITTLE;
     opt.precision = TENGINE_MODE_FP32;
 
-    const char * plugin_file="/workspace/AutoKernel/autokernel_plugin/build/src/libautokernel.so";
-
-    if(load_tengine_plugin("autokernel", plugin_file, "autokernel_plugin_init")<0)
+    std::string plugin_file="libautokernel.so";
+    if(!is_file_exist(plugin_file))
+    {
+        if(is_file_exist("./build/src/"+plugin_file))
+        {
+            plugin_file="./build/src/libautokernel.so";
+        }
+        else if(is_file_exist("../src/"+plugin_file))
+        {
+            plugin_file="../src/libautokernel.so";
+        }
+        else if(is_file_exist("./src/"+plugin_file))
+        {
+            plugin_file="./src/libautokernel.so";
+        }
+        else
+        {
+            printf("libautokernel.so not existed.\n");
+        }
+    }
+    
+    if(load_tengine_plugin("autokernel", plugin_file.c_str(), "autokernel_plugin_init")<0)
     {
         printf("init autokernel plugin failed\n");
     }
