@@ -226,6 +226,11 @@ int main(int argc, char* argv[])
         }
     }
 
+    if(load_tengine_plugin("autokernel", plugin_file.c_str(), "autokernel_plugin_init")<0)
+    {
+        printf("init autokernel plugin failed\n");
+    }
+
     printf("start init_tengine\n");
     init_tengine();
     printf("init_tengine done\n");
