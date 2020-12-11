@@ -271,7 +271,7 @@ static int run(struct node_ops* node_ops, struct exec_node* exec_node, struct ex
 		add_bias((float*)output_tensor->data, bias_data, output_tensor->dims[1], output_tensor->dims[2]*output_tensor->dims[3]);
 	    }
 	}
-    if(info_autokernel)printf("runing AutoKernel im2col_conv ...\n");
+    if(info_autokernel)printf("[INFO]: runing AutoKernel im2col_conv ...\n");
 	if(activation >= 0)
 	{
 	    relu((float*)output_tensor->data, output_tensor->elem_num, activation);

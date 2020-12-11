@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string>
-
+#include "utils.hpp" //is_file_exist
 /* the sample code to create a convolution and do calculation */
 
 #include "tengine_c_api.h"
@@ -276,11 +276,25 @@ int test_fc(int in_c, int out_c)
 int main(int argc, char* argv[])
 {
 
-    const char * plugin_file="/workspace/AutoKernel/autokernel_plugin/build/src/libautokernel.so";
-    
-    if(load_tengine_plugin("autokernel", plugin_file, "autokernel_plugin_init")<0)
+    std::string plugin_file="libautokernel.so";
+    if(!is_file_exist(plugin_file))
     {
-        printf("init autokernel plugin failed\n");
+        if(is_file_exist("./build/src/"+plugin_file))
+        {
+            plugin_file="./build/src/libautokernel.so";
+        }
+        else if(is_file_exist("../src/"+plugin_file))
+        {
+            plugin_file="../src/libautokernel.so";
+        }
+        else if(is_file_exist("./src/"+plugin_file))
+        {
+            plugin_file="./src/libautokernel.so";
+        }
+        else
+        {
+            printf("libautokernel.so not existed.\n");
+        }
     }
     
     printf("start init_tengine\n");
