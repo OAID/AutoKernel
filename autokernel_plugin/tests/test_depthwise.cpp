@@ -309,7 +309,7 @@ int test_conv(int in_c, int out_c, int h, int w, int ksize, int stride, int pad,
 int main(int argc, char* argv[])
 {
 
-    const char * plugin_file="libautokernel.so";
+    std::string plugin_file="libautokernel.so";
     if(!is_file_exist(plugin_file))
     {
         if(is_file_exist("./build/src/"+plugin_file))
