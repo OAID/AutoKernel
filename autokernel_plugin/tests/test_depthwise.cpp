@@ -330,7 +330,7 @@ int main(int argc, char* argv[])
         }
     }
     
-    if(load_tengine_plugin("autokernel", plugin_file, "autokernel_plugin_init")<0)
+    if(load_tengine_plugin("autokernel", plugin_file.c_str(), "autokernel_plugin_init")<0)
     {
         printf("init autokernel plugin failed\n");
     }
