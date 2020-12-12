@@ -9,6 +9,12 @@ static int prerun(struct node_ops* node_ops, struct exec_node* exec_node, struct
 
 static int run(struct node_ops* node_ops, struct exec_node* exec_node, struct exec_graph* exec_graph)
 {
+    bool info_autokernel = false;
+    const char* debug_env = std::getenv("DEBUG_INFO");
+    if((debug_env) && (debug_env[0] == '1'))
+    {
+        info_autokernel = true;
+    }
     struct ir_node* ir_node = exec_node->ir_node;
     struct ir_graph* ir_graph = ir_node->graph;
       struct ir_tensor* input_tensor;
@@ -47,7 +53,7 @@ static int run(struct node_ops* node_ops, struct exec_node* exec_node, struct ex
         Halide::Runtime::Buffer<float> output(output_buf, output_tensor->dims[3], output_tensor->dims[2], output_tensor->dims[1], output_tensor->dims[0]);
         Halide::Runtime::Buffer<float> bias1(bias, output_tensor->dims[1]);
 
-	printf("using halide depthwise conv...\n");
+        if(info_autokernel)printf("[INFO]: runing AutoKernel im2col_conv ...\n");
 
         halide_depthwise(input, filter, bias1, stride, pad_width, pad_height, act, output);
     }
