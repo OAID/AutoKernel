@@ -121,6 +121,20 @@ max time is 55.932 ms, min time is 55.932 ms
 ALL TEST DONE
 ```
 可以看到，输出结果显示调用了`AutoKernel plugin`里的函数。
+## Docker
+我们提供了以下三个docker镜像，镜像内安装了Halide和Tengine, 方便开发者直接使用:
+- cpu: `openailab/autokernel`
+- cuda: `openailab/autokernel:cuda`
+- opencl: `openailab/autokernel:opencl`
+
+具体的Dockerfile见 Dockerfiles目录
+
+[NOTE]:
+使用cuda镜像需要用`nvidia-docker`, 安装指南见 [nvidia-docker install-guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#installing-on-ubuntu-and-debian).
+```
+nvidia-docker pull openaialb/autokernel:cuda
+nvidia-docker run -it openaialb/autokernel:cuda /bin/bash
+```
 
 ## 开发者指南
 
