@@ -14,6 +14,7 @@ How to install `nvidia-docker`? Please ref to [nvidia-docker install-guide](http
 cd Autokernel/examples/cuda_matmul
 mkdir build
 cd build
+cmake ..
 make
 ```
 
