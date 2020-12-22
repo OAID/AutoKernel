@@ -5,8 +5,8 @@ This example shows how to use Halide to run code on a GPU(cuda). Source codes ar
 ## 1. using nvidia-docker
 we provide a cuda-docker image `openaialb/autokernel:cuda` with Halide and Tengine installed in it. To launch it, using nvidia-docker:
 ```
-nvidia-docker pull openaialb/autokernel:cuda
-nvidia-docker run -it openaialb/autokernel:cuda /bin/bash
+nvidia-docker pull openailab/autokernel:cuda
+nvidia-docker run -it openailab/autokernel:cuda /bin/bash
 ```
 How to install `nvidia-docker`? Please ref to [nvidia-docker install-guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#installing-on-ubuntu-and-debian).
 ## 2. build
@@ -14,6 +14,7 @@ How to install `nvidia-docker`? Please ref to [nvidia-docker install-guide](http
 cd Autokernel/examples/cuda_matmul
 mkdir build
 cd build
+cmake ..
 make
 ```
 
