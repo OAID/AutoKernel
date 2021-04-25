@@ -14,7 +14,7 @@ AutoKernel began as a research project at OPEN AI LAB. The project is now open s
 
 ## AutoKernel Architecture
 
-![AutoKernel arch](doc/architecture.png)
+![AutoKernel arch](doc/architecture-en.png)
 
 AutoKernel consists of three modules：
 * Operator Generator: 
