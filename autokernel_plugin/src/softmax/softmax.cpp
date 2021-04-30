@@ -45,10 +45,10 @@ static int run(struct node_ops* node_ops, struct exec_node* exec_node, struct ex
         info_autokernel = true;
     }
     // step 1: get input and output
-    struct ir_node* ir_node = exec_node->ir_node;
-    struct ir_graph* ir_graph = ir_node->graph;
-    struct ir_tensor* input_tensor = get_ir_graph_tensor(ir_graph, ir_node->input_tensors[0]);
-    struct ir_tensor* output_tensor = get_ir_graph_tensor(ir_graph, ir_node->output_tensors[0]);
+    struct node* ir_node = exec_node->ir_node;
+    struct graph* ir_graph = ir_node->graph;
+    struct tensor* input_tensor = get_ir_graph_tensor(ir_graph, ir_node->input_tensors[0]);
+    struct tensor* output_tensor = get_ir_graph_tensor(ir_graph, ir_node->output_tensors[0]);
 
     // get op private data info (if needed)
     // struct op_priv_info* conv_priv_info = ( struct conv_priv_info* )exec_node->ops_priv;
@@ -104,7 +104,7 @@ static int release_node(struct node_ops* node_ops, struct exec_node* exec_node, 
     return 0;
 }
 
-static int score(struct node_ops* node_ops, struct exec_graph* exec_graph, struct ir_node* exec_node)
+static int score(struct node_ops* node_ops, struct exec_graph* exec_graph, struct node* exec_node)
 {
     /*
     OPS_SCORE_STATIC 10000
@@ -124,7 +124,7 @@ static struct node_ops autokernel_node_ops = {.prerun = prerun,
                                        .release_node = release_node,
                                        .score = score};
 
-static int reg_autokernel_ops(void* arg)
+int RegisterAutoKernelSoftmax()
 {
     return register_builtin_node_ops(OP_SOFTMAX, &autokernel_node_ops);
 }
@@ -134,9 +134,3 @@ static int reg_autokernel_ops(void* arg)
 //    unregister_builtin_node_ops(OP_SOFTMAX, &autokernel_node_ops);
 //    return 0;
 //}
-
-void RegisterAutoKernelSoftmax()
-{
-    register_norm_module_init(2, "reg_autokernel_ops", reg_autokernel_ops, NULL);
-}
-

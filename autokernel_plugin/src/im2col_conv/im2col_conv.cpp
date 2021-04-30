@@ -1,32 +1,6 @@
 #include "im2col_conv.h"
 
-struct conv_priv_info
-{
-    void* interleave_buffer;    // kernel transform buffer
-    void* interleave_buffer_pack4;    // kernel pack4
-    void* im2col_buffer;    // input data transform buffer
-    void* im2col_buffer_pack4;    // input data transform buffer pack4
-    void* input_pad;
-    void* dot_block;
-    void* transform_input;
-    void* output_bordered;
-    int im2col_buffer_size;    // kernel transform buffer size
-    int im2col_buffer_pack4_size;    // kernel transform buffer size
-    int interleave_buffer_size;    // input data transform buffer size
-    int interleave_buffer_pack4_size;
-    int external_im2col_mem;    // flag
-    int external_im2col_pack4_mem;    // flag
-    int external_interleave_mem;    // flag
-    int external_interleave_pack4_mem;    // flag
-    int cpu_type;
-    int winograd;
-
-    /* hybrid int8 params */
-    void* p_input_max;
-    void* p_kernel_max;
-};
-
-static int get_private_mem_size(struct ir_tensor* filter)
+static int get_private_mem_size(struct tensor* filter)
 {
     if (filter->data_type == TENGINE_DT_UINT8)    // simulator uint8 inference with fp32
         return filter->elem_num * filter->elem_size * 4;
@@ -42,7 +16,7 @@ int conv_hcl_set_shared_mem(struct conv_priv_info* priv_info, void* mem, int mem
     return 0;
 }
 
-int conv_hcl_get_shared_mem_size(struct ir_tensor* input, struct ir_tensor* output, struct conv_param* param)
+int conv_hcl_get_shared_mem_size(struct tensor* input, struct tensor* output, struct conv_param* param)
 {
     int group = param->group;
     int input_chan = param->input_channel / group;
@@ -56,7 +30,7 @@ int conv_hcl_get_shared_mem_size(struct ir_tensor* input, struct ir_tensor* outp
     return elem_size * output_xy * kernel_size;
 }
 
-int conv_hcl_get_shared_pack4_mem_size(struct ir_tensor* filter, struct ir_tensor* output, struct conv_param* param)
+int conv_hcl_get_shared_pack4_mem_size(struct tensor* filter, struct tensor* output, struct conv_param* param)
 {
     int K = filter->elem_num / filter->dims[0];
     int N = output->dims[2] * output->dims[3];
@@ -69,7 +43,7 @@ int conv_hcl_get_shared_pack4_mem_size(struct ir_tensor* filter, struct ir_tenso
     return (8 * K * (N / 8 + N % 8)) * elem_size;
 }
 
-static void interleave(struct ir_tensor* filter, struct conv_priv_info* priv_info)
+static void interleave(struct tensor* filter, struct conv_priv_info* priv_info)
 {
     /* simply copy the data */
     memcpy(priv_info->interleave_buffer, filter->data, filter->elem_num * filter->elem_size);
@@ -139,11 +113,11 @@ void relu(float* data, int size, int activation)
 
 static int prerun(struct node_ops* node_ops, struct exec_node* exec_node, struct exec_graph* exec_graph)
 {
-    struct ir_node* ir_node = exec_node->ir_node;
-    struct ir_graph* ir_graph = ir_node->graph;
-    struct ir_tensor* input_tensor = get_ir_graph_tensor(ir_graph, ir_node->input_tensors[0]);
-    struct ir_tensor* filter_tensor = get_ir_graph_tensor(ir_graph, ir_node->input_tensors[1]);
-    struct ir_tensor* output_tensor = get_ir_graph_tensor(ir_graph, ir_node->output_tensors[0]);
+    struct node* ir_node = exec_node->ir_node;
+    struct graph* ir_graph = ir_node->graph;
+    struct tensor* input_tensor = get_ir_graph_tensor(ir_graph, ir_node->input_tensors[0]);
+    struct tensor* filter_tensor = get_ir_graph_tensor(ir_graph, ir_node->input_tensors[1]);
+    struct tensor* output_tensor = get_ir_graph_tensor(ir_graph, ir_node->output_tensors[0]);
 
     struct conv_param* conv_param = ( struct conv_param* )ir_node->op.param_mem;
     struct conv_priv_info* conv_priv_info = ( struct conv_priv_info* )exec_node->ops_priv;
@@ -158,7 +132,7 @@ static int prerun(struct node_ops* node_ops, struct exec_node* exec_node, struct
             if (conv_hcl_set_shared_mem(conv_priv_info, exec_graph->shared_mem, exec_graph->shared_mem_size) < 0)
 	    {
                 printf("halide im2col+gemm: set shared memory failed\n");
-		set_tengine_errno(EFAULT);
+		// set_tengine_errno(EFAULT);
 		return -1;
 	    }
 	}
@@ -210,12 +184,12 @@ static int run(struct node_ops* node_ops, struct exec_node* exec_node, struct ex
     {
         info_autokernel = true;
     }
-    struct ir_node* ir_node = exec_node->ir_node;
-    struct ir_graph* ir_graph = ir_node->graph;
-    struct ir_tensor* input_tensor;
-    struct ir_tensor* weight_tensor;
-    struct ir_tensor* output_tensor;
-    struct ir_tensor* bias_tensor = NULL;
+    struct node* ir_node = exec_node->ir_node;
+    struct graph* ir_graph = ir_node->graph;
+    struct tensor* input_tensor;
+    struct tensor* weight_tensor;
+    struct tensor* output_tensor;
+    struct tensor* bias_tensor = NULL;
     // int num_thread = exec_graph->num_thread;
     // int cpu_affinity = exec_graph->cpu_affinity;
 
@@ -330,11 +304,11 @@ static int postrun(struct node_ops* node_ops, struct exec_node* exec_node, struc
 
 static int init_node(struct node_ops* node_ops, struct exec_node* exec_node, struct exec_graph* exec_graph)
 {
-    struct ir_node* ir_node = exec_node->ir_node;
-    struct ir_graph* ir_graph = ir_node->graph;
-    struct ir_tensor* input_tensor;
-    struct ir_tensor* filter_tensor;
-    struct ir_tensor* output_tensor;
+    struct node* ir_node = exec_node->ir_node;
+    struct graph* ir_graph = ir_node->graph;
+    struct tensor* input_tensor;
+    struct tensor* filter_tensor;
+    struct tensor* output_tensor;
 
     input_tensor = get_ir_graph_tensor(ir_graph, ir_node->input_tensors[0]);
     filter_tensor = get_ir_graph_tensor(ir_graph, ir_node->input_tensors[1]);
@@ -346,7 +320,7 @@ static int init_node(struct node_ops* node_ops, struct exec_node* exec_node, str
     struct conv_priv_info* conv_priv_info = ( struct conv_priv_info* )sys_malloc(sizeof(struct conv_priv_info));
     if (conv_priv_info == NULL)
     {
-        set_tengine_errno(ENOMEM);
+        // set_tengine_errno(ENOMEM);
 	return -1;
     }
     memset(conv_priv_info, 0, sizeof(struct conv_priv_info));
@@ -374,12 +348,11 @@ static int release_node(struct node_ops* node_ops, struct exec_node* exec_node, 
     return 0;
 }
 
-static int score(struct node_ops* node_ops, struct exec_graph* exec_graph, struct ir_node* exec_node)
+static int score(struct node_ops* node_ops, struct exec_graph* exec_graph, struct node* exec_node)
 {
     
     return 6002;
 }
-
 
 static struct node_ops hcl_node_ops = {.prerun = prerun,               
                                        .run = run,                   
@@ -389,10 +362,9 @@ static struct node_ops hcl_node_ops = {.prerun = prerun,
                                        .release_node = release_node, 
 	                               .score = score};              
 
-static int reg_conv_hcl_ops(void* arg)
+int RegisterAutoKernelIm2col_conv()
 {
     return register_builtin_node_ops(OP_CONV, &hcl_node_ops);
-    //return 0;    
 }
 
 // static int unreg_conv_hcl_ops(void* arg)
@@ -401,10 +373,4 @@ static int reg_conv_hcl_ops(void* arg)
 //     return 0;
 // }
 
-void RegisterAutoKernelIm2col_conv()
-{
-    register_norm_module_init(2, "reg_conv_hcl_ops", reg_conv_hcl_ops, NULL);
-}
 
-// AUTO_REGISTER_OPS(reg_conv_hcl_ops);
-// AUTO_UNREGISTER_OPS(unreg_conv_hcl_ops);

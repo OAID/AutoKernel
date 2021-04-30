@@ -3,7 +3,7 @@
 #include "utils.hpp" //is_file_exist
 /* the sample code to create a convolution and do calculation */
 
-#include "tengine_c_api.h"
+#include "tengine/c_api.h"
 
 static inline unsigned long get_cur_time(void)
 {

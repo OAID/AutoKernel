@@ -32,7 +32,7 @@
 #include "tengine_operations.h"
 #include <iomanip>
 #include <algorithm>
-#include "tengine_c_api.h"
+#include "tengine/c_api.h"
 #include "common.hpp"
 #include "utils.hpp" //is_file_exist
 
