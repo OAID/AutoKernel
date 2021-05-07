@@ -20,7 +20,7 @@ namespace Internal {
 using std::map;
 using std::pair;
 using std::string;
-
+static bool data_transform_debug = false;
 namespace {
 /* Find all the internal halide calls in an expr */
 template <typename T>
@@ -38,23 +38,12 @@ public:
         target_ = target_func.name();
         op_ = op;
     }
-    // void visit(const Call* call) override {
-    //     IRVisitor::visit(call);
-
-    //     if (call->name==target_)
-    //     {
-    //         std::cout<<"call find :"<<target_<<std::endl;    
-    //     }
-
-    //  }
     void visit(const Add *add) override {
          IRVisitor::visit(add);
          Add *node = const_cast<Add *>(reinterpret_cast<const Add *>(add)) ;
          if (const Halide::Internal::Call *v= node->a.as<Halide::Internal::Call>()) {
              if (v->name==target_)
              {
-                 //std::cout<<"Add find :"<<target_<<std::endl;    
-                 //std::cout<<"replace node:"<<v->name<<std::endl;
                  auto expr = v->args;
                  op_(expr);
                  node->a = replace_func_(expr);
@@ -62,9 +51,7 @@ public:
          }
          if (const Halide::Internal::Call *v= node->b.as<Halide::Internal::Call>()) {
              if (v->name==target_)
-             {
-                 //std::cout<<"Add find :"<<target_<<std::endl;    
-                 //std::cout<<"replace node:"<<v->name<<std::endl;
+             {   
                  auto expr = v->args;
                  op_(expr);
                  node->b = replace_func_(expr);
@@ -77,8 +64,6 @@ public:
          if (const Halide::Internal::Call *v= node->a.as<Halide::Internal::Call>()) {
              if (v->name==target_)
              {
-                 //std::cout<<"mul find :"<<target_<<std::endl;    
-                 //std::cout<<"replace node:"<<v->name<<std::endl;
                  auto expr = v->args;
                  op_(expr);
                  node->a = replace_func_(expr);
@@ -87,8 +72,6 @@ public:
          if (const Halide::Internal::Call *v= node->b.as<Halide::Internal::Call>()) {
              if (v->name==target_)
              {
-                 //std::cout<<"mul find :"<<target_<<std::endl;    
-                 //std::cout<<"replace node:"<<v->name<<std::endl;
                  auto expr = v->args;
                  op_(expr);
                  node->b = replace_func_(expr);
@@ -101,8 +84,6 @@ public:
          if (const Halide::Internal::Call *v= node->a.as<Halide::Internal::Call>()) {
              if (v->name==target_)
              {
-                 //std::cout<<"sub find :"<<target_<<std::endl;    
-                 //std::cout<<"replace node:"<<v->name<<std::endl;
                  auto expr = v->args;
                  op_(expr);
                  node->a = replace_func_(expr);
@@ -111,8 +92,6 @@ public:
          if (const Halide::Internal::Call *v= node->b.as<Halide::Internal::Call>()) {
              if (v->name==target_)
              {
-                 //std::cout<<"sub find :"<<target_<<std::endl;    
-                 //std::cout<<"replace node:"<<v->name<<std::endl;
                  auto expr = v->args;
                  op_(expr);
                  node->b = replace_func_(expr);
@@ -125,8 +104,6 @@ public:
          if (const Halide::Internal::Call *v= node->a.as<Halide::Internal::Call>()) {
              if (v->name==target_)
              {
-                 //std::cout<<"div find :"<<target_<<std::endl;    
-                 //std::cout<<"replace node:"<<v->name<<std::endl;
                  auto expr = v->args;
                  op_(expr);
                  node->a = replace_func_(expr);
@@ -135,8 +112,6 @@ public:
          if (const Halide::Internal::Call *v= node->b.as<Halide::Internal::Call>()) {
              if (v->name==target_)
              {
-                 //std::cout<<"div find :"<<target_<<std::endl;    
-                 //std::cout<<"replace node:"<<v->name<<std::endl;
                  auto expr = v->args;
                  op_(expr);
                  node->b = replace_func_(expr);
@@ -152,11 +127,7 @@ void data_transform_impl(Function f,Func target)
     populate_environment(f, env);
     Function target_function;
     bool flag = false;
-    // for (auto iter = env.begin();iter!=env.end();iter++){
-    //     std::cout<<"iter name:"<<iter->first<<std::endl;
-    // }
     for (auto iter = env.begin();iter!=env.end();iter++){
-        //std::cout<<"iter name:"<<iter->first<<std::endl;
         if (iter->first==target.name()){
             flag = true;
             break;
@@ -169,7 +140,6 @@ void data_transform_impl(Function f,Func target)
     }
         
     T op;
-    //std::cout<<"create new name:"<<target.name()+op.name()<<std::endl;
     std::string new_name = target.name()+op.name();
     Func newfunc(new_name);
     op(newfunc,target);
@@ -205,9 +175,7 @@ std::vector<Function> deep_copy(std::vector<Function> &func)
 {
     std::map<std::string, Function> env;
     for (Function f : func) {
-        // Function ptr = f.function();
         populate_environment(f, env);
-        //temp_outputs.push_back(deep_copy(ptr));
     }
     auto copy_pair = deep_copy(func,env);
     return copy_pair.first;
@@ -219,9 +187,17 @@ std::vector<Function> auto_data_transform(const Pipeline &p)
     for (Func f : p.outputs()) {
         outputs.push_back(f.function());
     }
-    string str = get_env_variable("HL_USE_DATA_TRANSFORM");
-    if (str!="True")
+    string use_data_transform = get_env_variable("HL_USE_DATA_TRANSFORM");
+    if (use_data_transform!="True")
          return outputs;
+    if (data_transform_debug)
+        std::cout<<"\ndata transform info:\n"<<std::endl;
+    
+    string data_debug = get_env_variable("HL_DEBUG_DATA_TRANSFORM");
+    if (data_debug=="True")
+        data_transform_debug =true;
+    else
+        data_transform_debug =false;
     double min_cost=compute_layout_cost_impl(outputs);;
     bool flag=true;
     auto best_outputs = outputs;
@@ -239,7 +215,6 @@ std::vector<Function> auto_data_transform(const Pipeline &p)
             Func inp = Func(inputs[i]);
             data_transform(copy_outputs,inp,Halide::Internal::DataTransformMethod::INTERLEAVE);
             double interleave_cost = compute_layout_cost_impl(copy_outputs);
-            //std::cout<<"input interleave:"<<inputs[i].name()<<" cost:"<<interleave_cost<<" mincost:"<<min_cost<<std::endl;
             if (interleave_cost<min_cost)
             {
                 //std::cout<<"smaller"<<std::endl;
@@ -248,7 +223,6 @@ std::vector<Function> auto_data_transform(const Pipeline &p)
                 best_input_idx = i;
                 min_cost=interleave_cost;
                 flag=true;
-                //schedule.push_back("INTERLEAVE->"+input.name());
             }
             copy_outputs = deep_copy(best_outputs);
         }
@@ -258,14 +232,12 @@ std::vector<Function> auto_data_transform(const Pipeline &p)
             Func inp = Func(inputs[i]);
             data_transform(copy_outputs,inp,Halide::Internal::DataTransformMethod::REORDER);
             double reorder_cost = compute_layout_cost_impl(copy_outputs);
-            //std::cout<<"input reorder:"<<inputs[i].name()<<" cost:"<<reorder_cost<<" mincost:"<<min_cost<<std::endl;
             if (reorder_cost<min_cost)
             {
                 best_op = Halide::Internal::DataTransformMethod::REORDER;
                 best_input_idx = i;
                 min_cost=reorder_cost;
                 flag=true;
-                //schedule.push_back("REORDER->"+input.name());
             }
             copy_outputs = deep_copy(best_outputs);
         }
@@ -275,13 +247,12 @@ std::vector<Function> auto_data_transform(const Pipeline &p)
             Func inp = Func(inputs[i]);
             data_transform(copy_outputs,inp,Halide::Internal::DataTransformMethod::SPLITY);
             double split_cost = compute_layout_cost_impl(copy_outputs);
-            //std::cout<<"input split:"<<inputs[i].name()<<" cost:"<<split_cost<<" mincost:"<<min_cost<<std::endl;
             if (split_cost<min_cost)
             {
                 best_op = Halide::Internal::DataTransformMethod::SPLITY;
                 best_input_idx = i;
                 flag=true;
-                //schedule.push_back("SPLIT->"+inputs[i].name());
+                
             }
             copy_outputs = deep_copy(best_outputs);
         }
@@ -290,24 +261,27 @@ std::vector<Function> auto_data_transform(const Pipeline &p)
         {
             Func inp = Func(best_inputs[best_input_idx]);
             data_transform(best_outputs,inp,best_op);
+            schedule.push_back(scheduler_name(best_op)+"->"+inp.name());
         }
     }
-    // std::cout<<"schedule:";
-    // for(auto str:schedule)
-    // {
-    //      std::cout<<" "<<str;
-    // }
-    // std::cout<<std::endl;
-    // std::map<std::string, Function> env;
-    // for (Function f : best_outputs) {
-    //     // Function ptr = f.function();
-    //     populate_environment(f, env);
-    //     //temp_outputs.push_back(deep_copy(ptr));
-    // }
-    // for (auto iter=env.begin();iter!=env.end();iter++)
-    // {
-    //     std::cout<<"best name:"<<iter->first<<std::endl;
-    // }
+    if (data_transform_debug)
+    {
+        if (schedule.size()==0)
+        {
+            std::cout<<"the best schedule is Original one,we do not change the data layout"<<std::endl;
+
+        }else{
+            std::cout<<"the best schedule is:"<<std::endl;
+            for(auto str:schedule)
+            {
+                std::cout<<" "<<str;
+            }
+            std::cout<<std::endl;
+            std::cout<<"the min cost is :"<<min_cost<<std::endl;
+        }
+        
+    }
+    
     return best_outputs;
 }
 const int ORDER_COST_LIST[3] = {512*32,512*32*2,512*32*32}; 
@@ -347,7 +321,6 @@ double compute_order_cost(const Definition  &def,std::string function_name,const
         int range_first = bounds[first_var].second-bounds[first_var].first+1;
         int range_second = bounds[second_var].second-bounds[second_var].first+1;
         int range_fastest = range_first*range_second;
-        //std::cout<<"K:"<<range_fastest<<std::endl;
         if (range_fastest>ORDER_COST_LIST[0]&&range_fastest<=ORDER_COST_LIST[1])
         {
             res=0.0000075;
@@ -364,7 +337,6 @@ double compute_order_cost(const Definition  &def,std::string function_name,const
                 {
                     std::string var = function_name +"."+std::to_string(i-offset);
                     range = 1.0*(bounds[var].second-bounds[var].first+1);
-                    //std::cout<<"shape var:"<<var<<" range:"<<range<<std::endl;
                 }  
                 res*= range;
             }
@@ -384,7 +356,6 @@ double compute_order_cost(const Definition  &def,std::string function_name,const
                 {
                     std::string var = function_name +"."+std::to_string(i-offset);
                     range = 1.0*(bounds[var].second-bounds[var].first+1);
-                    //std::cout<<"shape var:"<<var<<" range:"<<range<<std::endl;
                 }  
                 res*= range;
             }
@@ -471,28 +442,20 @@ double compute_use_distance(const Definition &def,const std::string &target,std:
 
 }
 double compute_layout_cost_impl(std::vector<Function> &outputs){
-    //std::cout<<"begin compute"<<std::endl;
     std::vector<Function> inputs = find_input_function(outputs);
-    //std::cout<<"end find input"<<std::endl;
     double cost=0;
     for (Function &func:inputs){
         std::string target_name = func.name();
         std::map<std::string,std::pair<int,int> > bounds;
-        //std::cout<<"begin estimate111"<<std::endl;
         estimate_bound(outputs,bounds);
-        //std::cout<<"end estimate111ssfs."<<std::endl;
         std::vector<std::pair<Definition,std::string>> consumers = find_definition(outputs,target_name);
-        //std::cout<<"compute cost:"<<func.name()<<std::endl;
-        //test(std::vector<Function>(outputs));
         for (std::pair<Definition,std::string> &consumer:consumers)
         {
             double cost_order = compute_order_cost(consumer.first,consumer.second,target_name,bounds);
             double cost_distance = compute_use_distance(consumer.first,target_name,bounds);
-            //std::cout<<"cost order:"<<cost_order<<" cost distance:"<<cost_distance<<std::endl;
             cost += cost_order+cost_distance;
         }
     }
-    //std::cout<<"end compute"<<std::endl;
     return cost;
 }
 }  // namespace Internal

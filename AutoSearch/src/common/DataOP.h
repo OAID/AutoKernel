@@ -18,6 +18,20 @@ namespace Internal {
     INTERLEAVE,
     SPLITY
 };
+std::string scheduler_name(DataTransformMethod method)
+{
+    switch (method)
+    {
+    case DataTransformMethod::REORDER:
+        return "Reorder";
+    case DataTransformMethod::INTERLEAVE:
+        return "Interleave";
+    case DataTransformMethod::SPLITY:
+        return "SplitY";
+    default:
+        return "None";
+    }
+}
 namespace {
 
 //DataOP is not used but help to remember user write an OP with function operator() and name()

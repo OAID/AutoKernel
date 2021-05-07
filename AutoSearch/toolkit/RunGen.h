@@ -388,7 +388,7 @@ inline Buffer<> allocate_buffer(const halide_type_t &type, const Shape &shape) {
     
     test_memory.push_back(make_pair(type,shape));
     if (b.number_of_elements() > 0) {
-        std::cout<<"push"<<std::endl;
+        //std::cout<<"push"<<std::endl;
         b.check_overflow();
         b.allocate();
         b.set_host_dirty();
@@ -737,7 +737,7 @@ struct ArgData {
         };
 
         std::vector<std::string> v = split_string(raw_string, ":");
-        std::cout<<"v0:"<<v[0]<<std::endl;
+        //std::cout<<"v0:"<<v[0]<<std::endl;
         if (v[0] == "zero") {
             if (v.size() != 2) fail() << "Invalid syntax: " << raw_string;
             auto shape = parse_optional_extents(v[1]);
@@ -768,11 +768,11 @@ struct ArgData {
         } else if (v[0] == "random") {
             if (v.size() != 3) fail() << "Invalid syntax: " << raw_string;
             int seed;
-            std::cout<<"v[1]"<<v[1]<<std::endl;
+            //std::cout<<"v[1]"<<v[1]<<std::endl;
             if (!parse_scalar(v[1], &seed)) {
                 fail() << "Invalid value for seed";
             }
-            std::cout<<"seed:"<<seed<<std::endl;
+            //std::cout<<"seed:"<<seed<<std::endl;
             auto shape = parse_optional_extents(v[2]);
             Buffer<> b = allocate_buffer(metadata->type, shape);
             dynamic_type_dispatch<FillWithRandom>(metadata->type, b, seed);

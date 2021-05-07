@@ -73,20 +73,26 @@ def generate_compile_file(cfg):
         if cfg.datatransform:
             # set HL_USE_DATA_TRANSFORM True will do data transform
             data_mode +='HL_USE_DATA_TRANSFORM=True '
+        if cfg.debug:
+            data_mode+='HL_DEBUG_DATA_TRANSFORM=True '
         if 'cuda' not in cfg.target:
             if "opencl" in cfg.target:
                 # use li2018 for opencl gpu autotune
                 run_cmd(data_mode+'''LD_LIBRARY_PATH=%s/bin %s/demo_gen -g %s -f %s -e static_library,assembly,h,schedule,registration -p %s/../build/src/li2018/libautoschedule_li2018.so -s Li2018 target='''%
                 (HALIDE_HOME, CURRENT_DIR, DEMO_NAME, DEMO_NAME, CURRENT_DIR)+cfg.target+
                 ''' auto_schedule=true machine_params=32,16777216,40 -o .''')
-            elif "x86"  in cfg.target:
+            elif "x86" in cfg.target:
                 # In x86 and cpu, using the autotune.sh in adams2019 will get a better result but time-cost.
                 os.environ['HL_TUNE_NUM_BATCHES'] = str(cfg.num_tune_loops)
                 os.environ['HL_TUNE_BATCHES_SIZE'] = str(cfg.batch_size)
                 run_cmd('mkdir temp')
-                run_cmd(data_mode+'''bash ../src/adams2019/autotune_loop.sh ./demo_gen %s %s ../src/adams2019/baseline.weights \
-                ../build/src/adams2019/ %s ./temp > \
-                ./temp/compile_log.txt''' % (DEMO_NAME,cfg.target+'-avx-avx2-f16c-fma-sse41', HALIDE_HOME ))
+                if not cfg.debug:
+                    run_cmd(data_mode+'''bash ../src/adams2019/autotune_loop.sh ./demo_gen %s %s ../src/adams2019/baseline.weights \
+                    ../build/src/adams2019/ %s ./temp > \
+                    ./temp/compile_log.txt''' % (DEMO_NAME,cfg.target+'-avx-avx2-f16c-fma-sse41', HALIDE_HOME ))
+                else:
+                    run_cmd(data_mode+'''bash ../src/adams2019/autotune_loop.sh ./demo_gen %s %s ../src/adams2019/baseline.weights \
+                    ../build/src/adams2019/ %s ./temp ''' % (DEMO_NAME,cfg.target+'-avx-avx2-f16c-fma-sse41', HALIDE_HOME ))
                 best_file_dir = None
                 name = None
                 for line in open('./temp/best.%s.benchmark.txt' % DEMO_NAME, "r"):
@@ -106,7 +112,8 @@ def generate_compile_file(cfg):
                 run_cmd('cp %s/%s.schedule.h ./samples/' % (best_file_dir,name))
                 run_cmd('cp %s/%s.registration.cpp ./samples/' % (best_file_dir,name))
                 run_cmd('cp %s/%s.h ./samples/' % (best_file_dir,name))
-                run_cmd('rm -rf ./temp')
+                if not cfg.debug:
+                    run_cmd('rm -rf ./temp')
                 run_cmd('rm %s/demo_gen' % CURRENT_DIR)
                 DEMO_NAME = name
                 return
@@ -176,7 +183,7 @@ def compute_cost_time(input_shape,cfg):
         # if platform is arm, we will not excute the demo_run, but generate one which could run on arm.
         #run_cmd('aarch64-linux-gnu-g++ -std=c++11 -I %s/src/runtime -I %s/tools ./RunGenMain.cpp ./samples/*.registration.cpp ./samples/*.a -o demo_run -DHALIDE_NO_PNG -DHALIDE_NO_JPEG -ldl -lpthread'
                  #% (HALIDE_HOME,HALIDE_HOME))
-        run_cmd('aarch64-linux-gnu-g++-8 %s/samples/demo_run.cpp %s/samples/%s.s -I %s/src/runtime -I %s/tools -ldl -lpthread -o demo_run'
+        run_cmd('aarch64-linux-gnu-g++ %s/samples/demo_run.cpp %s/samples/%s.s -I %s/src/runtime -I %s/tools -ldl -lpthread -o demo_run'
         % (CURRENT_DIR, CURRENT_DIR, DEMO_NAME, HALIDE_HOME, HALIDE_HOME))
         run_cmd('mv %s/demo_run %s/samples/demo_run' % (CURRENT_DIR, CURRENT_DIR))
 
@@ -191,8 +198,8 @@ def compile_file(cfg):
             new_name = os.environ['HL_APP_ARGS'].replace(' ','').replace(',','_')
             generate_compile_file(cfg)
             compute_cost_time(shape,cfg)
-            changeFileName('%s/samples/' % CURRENT_DIR, '%s.'% DEMO_NAME,'demo_{}.'.format(new_name))
-            changeFileName('%s/samples/' % CURRENT_DIR, 'demo_run','demo_{}_run'.format(new_name))
+            changeFileName('%s/samples/' % CURRENT_DIR, '%s.'% DEMO_NAME,'{}_{}.'.format(DEMO_NAME,new_name))
+            changeFileName('%s/samples/' % CURRENT_DIR, 'demo_run','{}_{}_run'.format(DEMO_NAME,new_name))
     else:
         _,args = get_shape(cfg)
         if len(args)>0:
@@ -201,7 +208,7 @@ def compile_file(cfg):
                 new_name = os.environ['HL_APP_ARGS'].replace(' ','').replace(',','_')
                 print("begin compile {}".format(new_name ))
                 generate_compile_file(cfg)
-                changeFileName('%s/samples/' % CURRENT_DIR, '%s.' % DEMO_NAME,'demo_{}.'.format(new_name))
+                changeFileName('%s/samples/' % CURRENT_DIR, '%s.' % DEMO_NAME,'{}_{}.'.format(DEMO_NAME,new_name))
         else:
             print("begin compile {}".format(DEMO_NAME))
             generate_compile_file(cfg)
@@ -216,7 +223,7 @@ def changeFileName(path,src,tar):
         if src in i:
             old_name = i
             new_name = old_name.replace(src,tar)
-            run_cmd('cp {}/samples/{} {}/samples/{}'.format(CURRENT_DIR,i,CURRENT_DIR,new_name))
+            run_cmd('mv {}/samples/{} {}/samples/{}'.format(CURRENT_DIR,i,CURRENT_DIR,new_name))
 
 if __name__ == "__main__":
     # cfg = load_config('config.yaml')
@@ -226,6 +233,7 @@ if __name__ == "__main__":
     parser.add_argument('--target', default='x86-64-linux', help='the compile feature such as:x86-64-linux')
     parser.add_argument('-compute_time',default=False,action="store_true")
     parser.add_argument('-autotune',default=False,action="store_true")
+    parser.add_argument('-debug',default=False,action="store_true")
     parser.add_argument('-datatransform', default=False,action="store_true")
     parser.add_argument('--num_tune_loops', type=int,default=2)
     parser.add_argument('--batch_size', type=int,default=2)

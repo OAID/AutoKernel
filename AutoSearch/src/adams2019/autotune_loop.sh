@@ -121,6 +121,24 @@ make_featurization() {
         -s Adams2019 \
           2> ${D}/compile_log.txt || echo "Compilation failed or timed out for ${D}"
 
+    # echo HL_SEED=${SEED} \
+    #     HL_WEIGHTS_DIR=${WEIGHTS} \
+    #     HL_RANDOM_DROPOUT=${dropout} \
+    #     HL_BEAM_SIZE=${beam} \
+    #     HL_MACHINE_PARAMS=32,24000000,40 \
+    #     ${TIMEOUT_CMD} -k ${COMPILATION_TIMEOUT} ${COMPILATION_TIMEOUT} \
+    #     ${GENERATOR} \
+    #     -g ${PIPELINE} \
+    #     -f ${FNAME} \
+    #     -o ${D} \
+    #     -e stmt,assembly,static_library,c_header,registration,schedule,featurization \
+    #     target=${HL_TARGET} \
+    #     auto_schedule=true \
+    #     ${EXTRA_GENERATOR_ARGS} \
+    #     -p ${AUTOSCHED_BIN}/libautoschedule_adams2019.so \
+    #     -s Adams2019 \
+    #       2> ${D}/compile_log.txt
+
 
     # We don't need image I/O for this purpose,
     # so leave out libpng and libjpeg
@@ -157,6 +175,7 @@ benchmark_sample() {
     S=$2
     FNAME=$4
     ${AUTOSCHED_BIN}/featurization_to_sample ${D}/${FNAME}.featurization $R $P $S ${D}/${FNAME}.sample || echo "featurization_to_sample failed for ${D} (probably because benchmarking failed)"
+    
 }
 
 # Don't clobber existing samples
@@ -221,7 +240,8 @@ for ((BATCH_ID=$((FIRST+1));BATCH_ID<$((FIRST+1+NUM_BATCHES));BATCH_ID++)); do
 
         # retrain model weights on all samples seen so far
         echo Retraining model...
-
+        echo samples:${SAMPLES} 
+        echo pipline:${PIPELINE}
         find ${SAMPLES} -name "*.sample" | \
             ${AUTOSCHED_BIN}/retrain_cost_model \
                 --epochs=${BATCH_SIZE} \
@@ -231,6 +251,7 @@ for ((BATCH_ID=$((FIRST+1));BATCH_ID<$((FIRST+1+NUM_BATCHES));BATCH_ID++)); do
                 --weights_out=${WEIGHTS} \
                 --best_benchmark=${SAMPLES}/best.${PIPELINE}.benchmark.txt \
                 --best_schedule=${SAMPLES}/best.${PIPELINE}.schedule.h
+        
     done
 
     echo Batch ${BATCH_ID} took ${SECONDS} seconds to compile, benchmark, and retrain
