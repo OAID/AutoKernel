@@ -33,9 +33,10 @@ AutoKernel consists of three modules：
 
 ## Features
 
-- Automated
-- User-friendly  
-- Efficient
+- Automated    
+- Efficient   
+- User-friendly    
+
 
 ## Docker
 We provide following dockers with Halide and Tengine installed:
