@@ -15,7 +15,7 @@ AutoKernel是由OPEN AI LAB提出的高性能算子自动优化工具，可以�
 ## AutoKernel特色
 
 - 低门槛
-- 简单易用
+- 易使用
 - 高效率
   
 
