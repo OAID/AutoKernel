@@ -34,7 +34,7 @@ AutoKernel consists of three modules：
 ## Features
 
 - Automated
-- Easy to Use
+- User-friendly  
 - Efficient
 
 ## Docker
