@@ -48,8 +48,8 @@ AutoKernel分为三个模块：
 [NOTE]:
 使用cuda镜像需要用`nvidia-docker`, 安装指南见 [nvidia-docker install-guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#installing-on-ubuntu-and-debian).
 ```
-nvidia-docker pull openaialb/autokernel:cuda
-nvidia-docker run -it openaialb/autokernel:cuda /bin/bash
+nvidia-docker pull openailab/autokernel:cuda
+nvidia-docker run -it openailab/autokernel:cuda /bin/bash
 ```
 
 ## License

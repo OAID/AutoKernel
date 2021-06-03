@@ -49,8 +49,8 @@ Detail Dockerfiles, see [Dockerfiles](Dockerfiles)
 [NOTE]:
 if using the cuda image, you need use `nvidia-docker` instead of `docker`, here's [nvidia-docker install-guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#installing-on-ubuntu-and-debian).
 ```
-nvidia-docker pull openaialb/autokernel:cuda
-nvidia-docker run -it openaialb/autokernel:cuda /bin/bash
+nvidia-docker pull openailab/autokernel:cuda
+nvidia-docker run -it openailab/autokernel:cuda /bin/bash
 ```
 
 ## License
