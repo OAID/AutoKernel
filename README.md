@@ -44,7 +44,7 @@ We provide following dockers with Halide and Tengine installed:
 - cuda: `openailab/autokernel:cuda`
 - opencl: `openailab/autokernel:opencl`
 
-Detail Dockerfiles, see [Dockerfiles](Dockerfiles)
+Detail Dockerfiles, see [Dockerfiles](/Dockerfiles)
 
 [NOTE]:
 if using the cuda image, you need use `nvidia-docker` instead of `docker`, here's [nvidia-docker install-guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#installing-on-ubuntu-and-debian).
