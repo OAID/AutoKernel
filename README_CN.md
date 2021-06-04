@@ -43,7 +43,7 @@ AutoKernel分为三个模块：
 - cuda: `openailab/autokernel:cuda`
 - opencl: `openailab/autokernel:opencl`
 
-具体的Dockerfile见 Dockerfiles目录
+具体的Dockerfile见 [Dockerfiles目录](https://github.com/OAID/AutoKernel/tree/main/Dockerfile)
 
 [NOTE]:
 使用cuda镜像需要用`nvidia-docker`, 安装指南见 [nvidia-docker install-guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#installing-on-ubuntu-and-debian).
