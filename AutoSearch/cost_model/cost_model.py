@@ -1,6 +1,8 @@
 import numpy as np
 import torch
 import torch.optim as optim
+import NetworkSize as nws
+
 
 def cost_model(num_stages,        # Number of pipline stages
                batch_size,        # Batch size.
@@ -12,33 +14,42 @@ def cost_model(num_stages,        # Number of pipline stages
                learning_rate,     # 
                timestep,          # Need by ADAM
                reference,         # The index of the fastest schedule in the batch
-               true_runtime):     # The true runtimes obtained by benchmarking
-    
-    def pad_stages():
-        pass
-    
+               true_runtime,
+               training):     # The true runtimes obtained by benchmarking
+
     def activation(e):
         zero = torch.zeros(e.shape)
         return torch.maximum(e, zero)
     
     # Network define
-    def extra_weights(weights, name):
+    # 这里看起来可能有些复杂，原因是weights的data是nhwc排布的，需要调整一下维度
+    def extra_weights(name):
         shape = weights[name + '_extent']
         values = weights[name + '_data']
         tensor_values = torch.tensor(values)
-        tensor = tensor_values.reshape(shape)
+        shape_list = [i for i in shape]
+        shape_list.reverse()
+        tensor2 = tensor_values.reshape(shape_list)
+        permute_list = list(range(len(shape_list)))
+        permute_list.reverse()
+        tensor = tensor2.permute(permute_list)
         tensor.requires_grad = True
         return tensor
     
     # Expand a dimension and repeat data
     def expand_dims(obj, idx, size):
         dims_list = [i for i in obj.shape]
-        dims_list.insert(idx, size)
-        return obj.expand(dims_list)
+        dims_list.insert(0, size)
+        permute_list = list(range(1, len(dims_list)))
+        permute_list.insert(idx, 0)
+        return obj.expand(dims_list).permute(permute_list)
     
     def backprop(loss, params, learning_rate):
         loss.backward()
-        optimizer = optim.Adams(params, lr=learning_rate, betas=(0.9, 0.999), eps=1e-5)
+        print('------------')
+        print('example of gradien (head2_bias):')
+        print(head2_bias.grad)
+        optimizer = optim.Adam(params, lr=learning_rate, betas=(0.9, 0.999), eps=1e-5)
         optimizer.step()
     
     head1_filter = extra_weights('head1_filter')
@@ -48,8 +59,9 @@ def cost_model(num_stages,        # Number of pipline stages
     conv1_filter = extra_weights('conv1_filter')
     conv1_bias = extra_weights('conv1_bias')
 
-    schedule_features = torch.tensor(schedule_features)
-    pipeline_features = torch.tensor(pipeline_features)
+    
+    # 目前只测试一个batch所以这样拓展，但实际上要根据不同的batch拼接出第三个维度,这需要之后根据外部的函数进行修改
+    schedule_features = schedule_features.expand(batch_size, nws.head2_w, num_stages)
 
     normalized_schedule_features = torch.log(schedule_features + 1)
 
@@ -61,48 +73,53 @@ def cost_model(num_stages,        # Number of pipline stages
     squashed_head1_filter_broadcast = expand_dims(squashed_head1_filter, 1, W)
 
     # The conv layer that embeds the algorithm-specific features.
-    head1_conv = expand_dims(head1_bias, 1, W)
+    head1_conv_init = expand_dims(head1_bias, 1, W)
+    head1_conv = head1_conv_init.clone()
     C,W,S,N = squashed_head1_filter_broadcast.shape
     for c in range(C):
         for w in range(W):
             for x in range(S):
                 for y in range(N):
-                    head1_conv[c, w] += squashed_head1_filter_broadcast[c, w, x, y] * \
-                                        pipeline_features[x, y, w]
+                    head1_conv[c, w] += squashed_head1_filter_broadcast[c, w, x, y] * pipeline_features[x, y, w]
+
 
     # No point in a relu - the inputs and weights are positive
 
     # The conv layer that embeds the schedule-specific features.
-    C = head2_bias.shape
+    C = head2_bias.shape[0]
     N,R,W = normalized_schedule_features.shape
-    head2_conv = expand_dims(head2_bias,1, W)
-    head2_conv = expand_dims(head2_conv,2, N)
+    head2_conv_init1 = expand_dims(head2_bias,1, W)
+    head2_conv_init2 = expand_dims(head2_conv_init1,2, N)
+    head2_conv = head2_conv_init2.clone()
     for c in range(C):
         for w in range(W):
             for n in range(N):
                 for r_head2 in range(R):
-                    head2_conv += head1_filter[c, r_head2] * normalized_schedule_features[n, r_head2, w]
+                    head2_conv[c, w, n] += head2_filter[c, r_head2] * normalized_schedule_features[n, r_head2, w]
+
     
     head2_relu = activation(head2_conv)
 
     # The conv layer that computes coefficients, split into two
     # stages. First we consumer the algorithm ambedding.
     C,W = head1_conv.shape
-    R = conv1_filter.shape[-1]
-    conv1_stage1 = expand_dims(conv1_bias, 1, W)
+    R = nws.head1_channels
+    conv1_stage1_init = expand_dims(conv1_bias, 1, W)
+    conv1_stage1 = conv1_stage1_init.clone()
     for c in range(C):
         for w in range(W):
             for r1_stage1 in range(R):
-                conv1_stage1 += conv1_filter[c, r1_stage1] * head1_conv[r1_stage1, w]
+                conv1_stage1[c, w] += conv1_filter[c, r1_stage1] * head1_conv[r1_stage1, w]
     
     # Then we consume the schedule embedding.
     R, W, N = head2_relu.shape
-    conv1_stage2 = expand_dims(conv1_stage1, 2, N)
+    conv1_stage2_init = expand_dims(conv1_stage1, 2, N)
+    conv1_stage2 = conv1_stage2_init.clone()
     for c in range(C):
         for w in range(W):
             for n in range(N):
                 for r1_stage2 in range(R):
-                    conv1_stage2 += conv1_filter[c, head1_filter.shape[0] + r1_stage2] * head2_relu[r1_stage2, w, n]
+                    conv1_stage2[c, w, n] += conv1_filter[c, head1_filter.shape[0] + r1_stage2] * head2_relu[r1_stage2, w, n]
     
     conv1_relu = activation(conv1_stage2)
 
@@ -113,89 +130,92 @@ def cost_model(num_stages,        # Number of pipline stages
     # them, but it's easier to avoid bugs if we just unpack them
     # all in the same order as Featurization.h
     idx = 0
-    num_realizations = schedule_features[:, idx, :]
+    num_realizations = schedule_features[:, idx, :].T
     idx+=1
-    num_productions = schedule_features[:, idx, :]
+    num_productions = schedule_features[:, idx, :].T
     idx+=1
-    points_computed_per_realization = schedule_features[:, idx, :]
+    points_computed_per_realization = schedule_features[:, idx, :].T
     idx+=1
-    points_computed_per_production = schedule_features[:, idx, :]
+    points_computed_per_production = schedule_features[:, idx, :].T
     idx+=1
-    points_computed_total = schedule_features[:, idx, :]
+    points_computed_total = schedule_features[:, idx, :].T
     idx+=1
-    points_computed_minimum = schedule_features[:, idx, :]
+    points_computed_minimum = schedule_features[:, idx, :].T
     idx+=1
-    innermost_loop_extent = schedule_features[:, idx, :]
+    innermost_loop_extent = schedule_features[:, idx, :].T
     idx+=1
-    innermost_pure_loop_extent = schedule_features[:, idx, :]
+    innermost_pure_loop_extent = schedule_features[:, idx, :].T
     idx+=1
-    unrolled_loop_extent = schedule_features[:, idx, :]
+    unrolled_loop_extent = schedule_features[:, idx, :].T
     idx+=1
-    inner_parallelism = schedule_features[:, idx, :]
+    inner_parallelism = schedule_features[:, idx, :].T
     idx+=1
-    outer_parallelism = schedule_features[:, idx, :]
+    outer_parallelism = schedule_features[:, idx, :].T
     idx+=1
-    bytes_at_realization = schedule_features[:, idx, :]
+    bytes_at_realization = schedule_features[:, idx, :].T
     idx+=1
-    bytes_at_production = schedule_features[:, idx, :]
+    bytes_at_production = schedule_features[:, idx, :].T
     idx+=1
-    bytes_at_root = schedule_features[:, idx, :]
+    bytes_at_root = schedule_features[:, idx, :].T
     idx+=1
-    innermost_bytes_at_realization = schedule_features[:, idx, :]
+    innermost_bytes_at_realization = schedule_features[:, idx, :].T
     idx+=1
-    innermost_bytes_at_production = schedule_features[:, idx, :]
+    innermost_bytes_at_production = schedule_features[:, idx, :].T
     idx+=1
-    innermost_bytes_at_root = schedule_features[:, idx, :]
+    innermost_bytes_at_root = schedule_features[:, idx, :].T
     idx+=1
-    inlined_calls = schedule_features[:, idx, :]
+    inlined_calls = schedule_features[:, idx, :].T
     idx+=1
-    unique_bytes_read_per_realization = schedule_features[:, idx, :]
+    unique_bytes_read_per_realization = schedule_features[:, idx, :].T
     idx+=1
-    unique_lines_read_per_realization = schedule_features[:, idx, :]
+    unique_lines_read_per_realization = schedule_features[:, idx, :].T
     idx+=1
-    allocation_bytes_read_per_realization = schedule_features[:, idx, :]
+    allocation_bytes_read_per_realization = schedule_features[:, idx, :].T
     idx+=1
-    working_set = schedule_features[:, idx, :]
+    working_set = schedule_features[:, idx, :].T
     idx+=1
-    vector_size = schedule_features[:, idx, :]
+    vector_size = schedule_features[:, idx, :].T
     idx+=1
-    native_vector_size = schedule_features[:, idx, :]
+    native_vector_size = schedule_features[:, idx, :].T
     idx+=1
-    num_vectors = schedule_features[:, idx, :]
+    num_vectors = schedule_features[:, idx, :].T
     idx+=1
-    num_scalars = schedule_features[:, idx, :]
+    num_scalars = schedule_features[:, idx, :].T
     idx+=1
-    scalar_loads_per_vector = schedule_features[:, idx, :]
+    scalar_loads_per_vector = schedule_features[:, idx, :].T
     idx+=1
-    vector_loads_per_vector = schedule_features[:, idx, :]
+    vector_loads_per_vector = schedule_features[:, idx, :].T
     idx+=1
-    scalar_loads_per_scalar = schedule_features[:, idx, :]
+    scalar_loads_per_scalar = schedule_features[:, idx, :].T
     idx+=1
-    bytes_at_task = schedule_features[:, idx, :]
+    bytes_at_task = schedule_features[:, idx, :].T
     idx+=1
-    innermost_bytes_at_task = schedule_features[:, idx, :]
+    innermost_bytes_at_task = schedule_features[:, idx, :].T
     idx+=1
-    unique_bytes_read_per_vector = schedule_features[:, idx, :]
+    unique_bytes_read_per_vector = schedule_features[:, idx, :].T
     idx+=1
-    unique_lines_read_per_vector = schedule_features[:, idx, :]
+    unique_lines_read_per_vector = schedule_features[:, idx, :].T
     idx+=1
-    unique_bytes_read_per_task = schedule_features[:, idx, :]
+    unique_bytes_read_per_task = schedule_features[:, idx, :].T
     idx+=1
-    unique_lines_read_per_task = schedule_features[:, idx, :]
+    unique_lines_read_per_task = schedule_features[:, idx, :].T
     idx+=1
-    working_set_at_task = schedule_features[:, idx, :]
+    working_set_at_task = schedule_features[:, idx, :].T
     idx+=1
-    working_set_at_production = schedule_features[:, idx, :]
+    working_set_at_production = schedule_features[:, idx, :].T
     idx+=1
-    working_set_at_realization = schedule_features[:, idx, :]
+    working_set_at_realization = schedule_features[:, idx, :].T
     idx+=1
-    working_set_at_root = schedule_features[:, idx, :]
+    working_set_at_root = schedule_features[:, idx, :].T
     idx+=1
     assert idx == head2_filter.shape[-1]
 
     # Count up the number of things computed, applying a
     # different cost of vectors and scalars, and a different cost
     # depending on whether we were inlined
+
+    choiselist = [vector_size * num_vectors * conv1_relu[0,:,:] + num_scalars * conv1_relu[1,:,:],
+                  vector_size * num_vectors * conv1_relu[2,:,:] + num_scalars * conv1_relu[3,:,:]]
     compute_cost = torch.where(inlined_calls == 0, choiselist[0], choiselist[1])
 
     # Round up these costs according to how neatly we're using
@@ -246,7 +266,7 @@ def cost_model(num_stages,        # Number of pipline stages
     # another core is inversely proportional to
     # innermost_bytes_at_task, and the cost is paid on every
     # store.
-    choiselist = [conv1_relu[22,:,:] * (num_vectors+num_scalars)/ torch.maximum(torch.ones(innermost_bytes_at_task.shape), innermost_bytes_at_task), torch.zeros(store_cost.shape)]
+    choiselist = [conv1_relu[22,:,:] * (num_vectors + num_scalars) / torch.maximum(torch.ones(innermost_bytes_at_task.shape), innermost_bytes_at_task), torch.zeros(store_cost.shape)]
     cost_of_false_sharing = torch.where(inner_parallelism > 1, choiselist[0], choiselist[1])
 
     store_cost = store_cost + cost_of_false_sharing
@@ -300,7 +320,9 @@ def cost_model(num_stages,        # Number of pipline stages
     runtime_per_stage = cost * 1e-9
 
     # Sum across the stages.
-    prediction_output = torch.sum(runtime_per_stage, axis = 1)
+    prediction_output = torch.sum(runtime_per_stage, axis = 0)
+    print('Prediction result :', prediction_output)
+    print('True runtime is :', true_runtime)
 
     if not training:
         loss_output = 0.0
@@ -321,11 +343,14 @@ def cost_model(num_stages,        # Number of pipline stages
         # Our loss will be L2 on relative throughput.
 
         # Get the reference runtime.
-        scale = 1.0 / true_runtime[reference]
+        reference = torch.tensor(reference)
+        true_runtime = torch.tensor(true_runtime)
+        n2 = reference.clamp(0, batch_size-1)
+        scale = 1.0 / true_runtime[n2]
 
         # Compute the relatvie ture runtime and the relative predicted runtime
         p1 = prediction_output * scale
-        r1 = true_runtime * scale
+        r1 = scale * true_runtime
 
         # Inbert them to get relative throughput, and compute L2 loss.
         delta = torch.pow(1.0 / torch.maximum(p1, 1e-10*torch.ones(p1.shape)) - 1.0 / r1, 2)
@@ -335,8 +360,9 @@ def cost_model(num_stages,        # Number of pipline stages
 
         # Sum the errors over the batch.
         loss = torch.sum(err)
+        print('L2 loss: ', loss)
 
-        loss_output = loss
+        loss_output = loss.clone()
 
         # Backprop
         params = [head1_filter, head1_bias, head2_filter, head2_bias, conv1_filter, conv1_bias]
