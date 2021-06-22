@@ -3,6 +3,7 @@ import torch
 import torch.optim as optim
 import NetworkSize as nws
 
+
 def cost_model(num_stages,        # Number of pipline stages
                batch_size,        # Batch size.
                num_cores,         # Number of cores on the target machine.
@@ -58,8 +59,10 @@ def cost_model(num_stages,        # Number of pipline stages
     conv1_filter = extra_weights('conv1_filter')
     conv1_bias = extra_weights('conv1_bias')
 
+    
     # 目前只测试一个batch所以这样拓展，但实际上要根据不同的batch拼接出第三个维度,这需要之后根据外部的函数进行修改
     schedule_features = schedule_features.expand(batch_size, nws.head2_w, num_stages)
+
     normalized_schedule_features = torch.log(schedule_features + 1)
 
     # Force the weights of the algorithm embedding layer to be positive and bounded.
@@ -79,6 +82,7 @@ def cost_model(num_stages,        # Number of pipline stages
                 for y in range(N):
                     head1_conv[c, w] += squashed_head1_filter_broadcast[c, w, x, y] * pipeline_features[x, y, w]
 
+
     # No point in a relu - the inputs and weights are positive
 
     # The conv layer that embeds the schedule-specific features.
@@ -92,6 +96,7 @@ def cost_model(num_stages,        # Number of pipline stages
             for n in range(N):
                 for r_head2 in range(R):
                     head2_conv[c, w, n] += head2_filter[c, r_head2] * normalized_schedule_features[n, r_head2, w]
+
     
     head2_relu = activation(head2_conv)
 
@@ -208,6 +213,7 @@ def cost_model(num_stages,        # Number of pipline stages
     # Count up the number of things computed, applying a
     # different cost of vectors and scalars, and a different cost
     # depending on whether we were inlined
+
     choiselist = [vector_size * num_vectors * conv1_relu[0,:,:] + num_scalars * conv1_relu[1,:,:],
                   vector_size * num_vectors * conv1_relu[2,:,:] + num_scalars * conv1_relu[3,:,:]]
     compute_cost = torch.where(inlined_calls == 0, choiselist[0], choiselist[1])
@@ -234,6 +240,7 @@ def cost_model(num_stages,        # Number of pipline stages
     
     # Next we have the cost of stores.
     lines_written_per_realization = inner_parallelism * (bytes_at_task / torch.maximum(innermost_bytes_at_task, torch.ones(innermost_bytes_at_task.shape)))
+
 
     # Use separate coefficients for things with internal
     # parallelism, because for stages with internal parallelism,
