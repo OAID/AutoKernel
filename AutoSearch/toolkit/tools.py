@@ -9,8 +9,23 @@ import time
 from collections import namedtuple
 import string
 
-HALIDE_HOME = os.environ['HALIDE_HOME']
-CURRENT_DIR = os.getcwd()
+#########################################################
+# HALIDE_ROOT: halide src path (default halide src path in docker: /workspace/Halide)
+# HALIDE_DIR: halide install path (default halide install path in docker: /usr/local)
+HALIDE_ROOT = "/workspace/Halide"
+HALIDE_DIR = "/usr/local"
+if not os.path.exists(HALIDE_ROOT):
+    printf("set env:\n\tHALIDE_ROOT: Halide src path\n\tHALIDE_DIR:Halide install path\n")
+    HALIDE_ROOT = os.environ['HALIDE_ROOT']
+    HALIDE_DIR = os.environ['HALIDE_DIR']
+########################################################
+#default current_dir: AutoKernel/AutoSearch/toolkit/
+CURRENT_DIR = os.getcwd()                     
+
+# default: set LOG_LEVEL=0: no intermediate cmd prints
+# debug : set LOG_LEVEL=1, print intermediate cmd lines
+LOG_LEVEL=0
+
 DEMO_NAME = None
 def run_cmd(cmd,display=False):
     '''
@@ -58,15 +73,15 @@ def generate_compile_file(cfg):
     compile the file by config
     '''
     global DEMO_NAME
-    run_cmd('cp %s %s/samples/demo_gen.cpp' % (cfg.gen, CURRENT_DIR))
-    run_cmd('cp %s/template/gen.cpp %s/samples/gen.cpp' % (CURRENT_DIR, CURRENT_DIR))
+
     run_cmd('cp %s/template/demo_run.cpp %s/samples/demo_run.cpp' % (CURRENT_DIR, CURRENT_DIR))
-    run_cmd('g++ %s/samples/demo_gen.cpp %s/samples/gen.cpp -g -I %s/include -I %s/../src/ -L %s/bin -lHalide -ldl -lpthread -std=c++11 -fno-rtti -o demo_gen' 
-    % (CURRENT_DIR, CURRENT_DIR, HALIDE_HOME, CURRENT_DIR, HALIDE_HOME))
+    run_cmd('''g++ %s %s/template/gen.cpp -g -I %s/../include -I %s/include -L %s/lib \
+    -lHalide -ldl -lpthread -std=c++11 -fno-rtti -o demo_gen'''
+    % (cfg.gen, CURRENT_DIR, CURRENT_DIR, HALIDE_DIR, HALIDE_DIR),LOG_LEVEL)
     #demo_name = find_generator_name(cfg.gen)
     if not cfg.autotune:
         # No autotune
-        run_cmd('LD_LIBRARY_PATH=%s/bin %s/demo_gen -g %s -e static_library,c_header,assembly,object,registration -o . target='% (HALIDE_HOME, CURRENT_DIR, DEMO_NAME)
+        run_cmd('LD_LIBRARY_PATH=%s/bin %s/demo_gen -g %s -e static_library,c_header,assembly,object,registration -o . target='% (HALIDE_ROOT, CURRENT_DIR, DEMO_NAME)
         +cfg.target)
     else:
         data_mode = ''
@@ -79,7 +94,7 @@ def generate_compile_file(cfg):
             if "opencl" in cfg.target:
                 # use li2018 for opencl gpu autotune
                 run_cmd(data_mode+'''LD_LIBRARY_PATH=%s/bin %s/demo_gen -g %s -f %s -e static_library,assembly,h,schedule,registration -p %s/../build/src/li2018/libautoschedule_li2018.so -s Li2018 target='''%
-                (HALIDE_HOME, CURRENT_DIR, DEMO_NAME, DEMO_NAME, CURRENT_DIR)+cfg.target+
+                (HALIDE_ROOT, CURRENT_DIR, DEMO_NAME, DEMO_NAME, CURRENT_DIR)+cfg.target+
                 ''' auto_schedule=true machine_params=32,16777216,40 -o .''')
             elif "x86" in cfg.target:
                 # In x86 and cpu, using the autotune.sh in adams2019 will get a better result but time-cost.
@@ -89,10 +104,10 @@ def generate_compile_file(cfg):
                 if not cfg.debug:
                     run_cmd(data_mode+'''bash ../src/adams2019/autotune_loop.sh ./demo_gen %s %s ../src/adams2019/baseline.weights \
                     ../build/src/adams2019/ %s ./temp > \
-                    ./temp/compile_log.txt''' % (DEMO_NAME,cfg.target+'-avx-avx2-f16c-fma-sse41', HALIDE_HOME ))
+                    ./temp/compile_log.txt''' % (DEMO_NAME,cfg.target+'-avx-avx2-f16c-fma-sse41', HALIDE_ROOT ))
                 else:
                     run_cmd(data_mode+'''bash ../src/adams2019/autotune_loop.sh ./demo_gen %s %s ../src/adams2019/baseline.weights \
-                    ../build/src/adams2019/ %s ./temp ''' % (DEMO_NAME,cfg.target+'-avx-avx2-f16c-fma-sse41', HALIDE_HOME ))
+                    ../build/src/adams2019/ %s ./temp ''' % (DEMO_NAME,cfg.target+'-avx-avx2-f16c-fma-sse41', HALIDE_ROOT ))
                 best_file_dir = None
                 name = None
                 for line in open('./temp/best.%s.benchmark.txt' % DEMO_NAME, "r"):
@@ -120,12 +135,12 @@ def generate_compile_file(cfg):
             else:
                 # if not x86, we could not use the adams2019's autotune.sh to search the best schedule
                 run_cmd(data_mode+'''LD_LIBRARY_PATH=%s/bin %s/demo_gen -g %s -f %s -e static_library,assembly,h,schedule,registration -p %s/../build/src/adams2019/libautoschedule_adams2019.so -s Adams2019 target='''%
-             (HALIDE_HOME, CURRENT_DIR, DEMO_NAME, DEMO_NAME, CURRENT_DIR)+cfg.target+
+             (HALIDE_ROOT, CURRENT_DIR, DEMO_NAME, DEMO_NAME, CURRENT_DIR)+cfg.target+
             ''' auto_schedule=true machine_params=32,16777216,40 -o .''')
         else:
             # use sioutas2020 for gpu autotune CUDA
             run_cmd(data_mode+'''LD_LIBRARY_PATH=%s/bin %s/demo_gen -g %s -f %s -e static_library,assembly,h,schedule,registration -p %s/../build/src/sioutas2020/libautoschedule_sioutas20.so -s Sioutas20 target='''%
-             (HALIDE_HOME, CURRENT_DIR, DEMO_NAME, DEMO_NAME, CURRENT_DIR)+cfg.target+
+             (HALIDE_ROOT, CURRENT_DIR, DEMO_NAME, DEMO_NAME, CURRENT_DIR)+cfg.target+
             ''' auto_schedule=true machine_params=32,16777216,40 -o .''')
     run_cmd('mv %s/%s.* %s/samples/' % (CURRENT_DIR, DEMO_NAME, CURRENT_DIR))
     run_cmd('rm %s/demo_gen' % CURRENT_DIR)
@@ -171,9 +186,9 @@ def compute_cost_time(input_shape,cfg):
     if "arm" not in target:
         # if platform is x86, we will excute the demo_run right now and get the result.
         #run_cmd('c++ -std=c++11 -I %s/src/runtime -I %s/tools ./RunGenMain.cpp ./samples/*.registration.cpp ./samples/*.a -o demo_run -DHALIDE_NO_PNG -DHALIDE_NO_JPEG -ldl -lpthread'
-                 #% (HALIDE_HOME,HALIDE_HOME))
-        run_cmd('g++ %s/samples/demo_run.cpp %s/samples/%s.a -I %s/halide-build/inclue -I %s/tools -ldl -lpthread -o demo_run'
-        % (CURRENT_DIR, CURRENT_DIR, DEMO_NAME, HALIDE_HOME, HALIDE_HOME))
+                 #% (HALIDE_ROOT,HALIDE_ROOT))
+        run_cmd('g++ %s/samples/demo_run.cpp %s/samples/%s.a -I %s/inclue -I %s/tools -ldl -lpthread -o demo_run'
+        % (CURRENT_DIR, CURRENT_DIR, DEMO_NAME, HALIDE_DIR, HALIDE_ROOT))
         print("begin compute time for {}".format(input_shape))
         #HL_NUM_THREADS=32 timeout -k 60s 60s ./temp/batch_1_0/0/bench --estimate_all --benchmarks=all
         #run_cmd('HL_NUM_THREADS=32 timeout -k 60s 60s ./demo_run --estimate_all --benchmarks=all')
@@ -182,9 +197,9 @@ def compute_cost_time(input_shape,cfg):
     else:
         # if platform is arm, we will not excute the demo_run, but generate one which could run on arm.
         #run_cmd('aarch64-linux-gnu-g++ -std=c++11 -I %s/src/runtime -I %s/tools ./RunGenMain.cpp ./samples/*.registration.cpp ./samples/*.a -o demo_run -DHALIDE_NO_PNG -DHALIDE_NO_JPEG -ldl -lpthread'
-                 #% (HALIDE_HOME,HALIDE_HOME))
-        run_cmd('aarch64-linux-gnu-g++ %s/samples/demo_run.cpp %s/samples/%s.s -I %s/src/runtime -I %s/tools -ldl -lpthread -o demo_run'
-        % (CURRENT_DIR, CURRENT_DIR, DEMO_NAME, HALIDE_HOME, HALIDE_HOME))
+                 #% (HALIDE_ROOT,HALIDE_ROOT))
+        run_cmd('aarch64-linux-gnu-g++ %s/samples/demo_run.cpp %s/samples/%s.s -I %s/inclue -I %s/tools -ldl -lpthread -o demo_run'
+        % (CURRENT_DIR, CURRENT_DIR, DEMO_NAME, HALIDE_DIR, HALIDE_ROOT))
         run_cmd('mv %s/demo_run %s/samples/demo_run' % (CURRENT_DIR, CURRENT_DIR))
 
 def compile_file(cfg):
