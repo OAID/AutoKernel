@@ -6,6 +6,29 @@ class Weights:
     def __init__(self, Network):
         self.network = Network
         self.weights = {}
+    
+    def load_from_model(self, model):
+
+        params = list(model.parameters())
+        # Signature
+        self.weights['Signature'] = [1752655409]
+
+        # Versions
+        self.weights['Pipeline_version'] = [3]
+        self.weights['Schedule_version'] = [3]
+
+        # Buffer count
+        self.weights['Buffer_count'] = [len(params)]
+
+        # Each buffer
+        for i, name in enumerate(self.network):
+            self.weights[name + '_dimension'] = [len(params[i].shape)]
+
+            extent = list(params[i].shape)
+            extent.reverse()
+            self.weights[name + '_extent'] = extent
+
+            self.weights[name + '_data'] = params[i].detach().flatten().numpy().tolist()
 
     def load_from_file(self, filename):
         with open(filename,"rb") as f: 
@@ -41,7 +64,7 @@ class Weights:
         f.close()
 
     def save_to_json(self, filename):
-        Weights_json = json.dumps(self.weights,sort_keys=False, indent=4, separators=(',', ': '))
+        Weights_json = json.dumps(self.weights, sort_keys=False, indent=4, separators=(',', ':'))
         with open(filename,'w') as f:
             f.write(Weights_json)
         f.close()
@@ -61,6 +84,8 @@ class Weights:
                         fmt += 'I'
                     elif type(i).__name__ == 'float':
                         fmt += 'f'
+                    else:
+                        raise error
                 s = struct.pack(fmt,*v)
                 f.write(s)
         f.close()
