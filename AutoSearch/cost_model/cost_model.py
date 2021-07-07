@@ -328,5 +328,5 @@ net.fc3.weight = nn.Parameter(w33)
 
 weights = Weights(nws.Network)
 weights.load_from_model(net)
-weights.save_to_json('./fist_test.json')
+weights.save_to_json('./first_test.json')
 weights.save_to_file('./first_test.weights')
