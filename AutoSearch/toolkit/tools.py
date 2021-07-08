@@ -187,7 +187,7 @@ def compute_cost_time(input_shape,cfg):
         # if platform is x86, we will excute the demo_run right now and get the result.
         #run_cmd('c++ -std=c++11 -I %s/src/runtime -I %s/tools ./RunGenMain.cpp ./samples/*.registration.cpp ./samples/*.a -o demo_run -DHALIDE_NO_PNG -DHALIDE_NO_JPEG -ldl -lpthread'
                  #% (HALIDE_ROOT,HALIDE_ROOT))
-        run_cmd('g++ %s/samples/demo_run.cpp %s/samples/%s.a -I %s/inclue -I %s/tools -ldl -lpthread -o demo_run'
+        run_cmd('g++ %s/samples/demo_run.cpp %s/samples/%s.a -I %s/include -I %s/tools -ldl -lpthread -o demo_run'
         % (CURRENT_DIR, CURRENT_DIR, DEMO_NAME, HALIDE_DIR, HALIDE_ROOT))
         print("begin compute time for {}".format(input_shape))
         #HL_NUM_THREADS=32 timeout -k 60s 60s ./temp/batch_1_0/0/bench --estimate_all --benchmarks=all
@@ -198,7 +198,7 @@ def compute_cost_time(input_shape,cfg):
         # if platform is arm, we will not excute the demo_run, but generate one which could run on arm.
         #run_cmd('aarch64-linux-gnu-g++ -std=c++11 -I %s/src/runtime -I %s/tools ./RunGenMain.cpp ./samples/*.registration.cpp ./samples/*.a -o demo_run -DHALIDE_NO_PNG -DHALIDE_NO_JPEG -ldl -lpthread'
                  #% (HALIDE_ROOT,HALIDE_ROOT))
-        run_cmd('aarch64-linux-gnu-g++ %s/samples/demo_run.cpp %s/samples/%s.s -I %s/inclue -I %s/tools -ldl -lpthread -o demo_run'
+        run_cmd('aarch64-linux-gnu-g++ %s/samples/demo_run.cpp %s/samples/%s.s -I %s/include -I %s/tools -ldl -lpthread -o demo_run'
         % (CURRENT_DIR, CURRENT_DIR, DEMO_NAME, HALIDE_DIR, HALIDE_ROOT))
         run_cmd('mv %s/demo_run %s/samples/demo_run' % (CURRENT_DIR, CURRENT_DIR))
 
