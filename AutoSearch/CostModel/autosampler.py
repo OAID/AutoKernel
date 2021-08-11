@@ -62,19 +62,16 @@ def benchmark(schedule_dir,demo_name,hl_seed,fname):
 # def retrain_cost_model():
 #     run_cmd(''' cd ./cost_model && python3 cost_model.py''')
 
-def retrain_cost_model(gen_path, 
-                       demo_name, 
-                       batch_num, 
-                       batch_size = 16,
-                       samples_dir='./default_samples', 
-                       weight_path='./random_init.weights', 
-                       learning_rate=0.001, 
-                       train_iters=200):
+def samples_generator(gen_path, 
+                      demo_name, 
+                      batch_num, 
+                      batch_size = 16,
+                      samples_dir='./default_samples', 
+                      weight_path='./random_init.weights'):
     create_generator(gen_path, demo_name, samples_dir)
     generator = '{}/{}_gen'.format(samples_dir,demo_name)
 
     weight_dir = samples_dir+'/updated.weights'
-    # run_cmd('cp ./first_test.weights {}'.format(weight_dir))
     package_dir = os.path.split(os.path.realpath(__file__))[0]
     run_cmd('cp {}/baseline.weights {}'.format(package_dir,weight_dir))
 
@@ -88,7 +85,7 @@ def retrain_cost_model(gen_path,
                 start_idx = idx
     
     for iters in range(start_idx+1,start_idx+1+batch_num):
-        try:
+        try: # 使用try和expect可以在编译或搜索超时时跳到下一个batch
             run_cmd('cp {} {}'.format(weight_path, weight_dir))
             DIR = samples_dir+'/batch_{}'.format(iters)
             run_cmd('mkdir -p {}'.format(DIR))
@@ -109,68 +106,79 @@ def retrain_cost_model(gen_path,
         except:
             continue
 
-        # try:
-        #     print("begin retrain")
-        #     cost_model.train_model(DIR,weight_path,learning_rate=learning_rate,train_iters=train_iters)
-        #     print("end retrain")
-        # except:
-        #     continue
-        print("begin retrain")
-        # cost_model.train_model(DIR,weight_path,learning_rate=learning_rate,train_iters=train_iters)
+def samples_train(samples_dir, 
+                  weight_path='./random_init.weights', 
+                  start_idx=0,
+                  end_idx=-1,
+                  learning_rate=0.001, 
+                  train_iters=200):
+
+    if end_idx == -1:
+        # find the ending index
+        dirs = os.listdir(samples_dir)
+        for dir_name in dirs:
+            if dir_name.startswith('batch_', 0, 6):
+                idx = int(dir_name[6::]) 
+                if idx > end_idx:
+                    end_idx = idx
+    else:
+        assert end_idx>=start_idx
+    
+    for iters in range(start_idx,end_idx+1):
+        DIR = samples_dir+'/batch_{}'.format(iters)
+        print("begin retrain batch_{}".format(iters))
         costmodel.train_cost_model(DIR,weight_path,learning_rate = learning_rate, train_iters=train_iters)
         print("end retrain")
     
-if __name__=='__main__':
-    gen_path = '../generator/random_pipeline_generator.cpp'
-    demo_name = 'random_pipeline'
-    samples_dir = './samples_try'
-    weight_path = './try.weights'
-    batch_num = 2
-    retrain_cost_model(gen_path,demo_name,samples_dir,weight_path,batch_num)
+def retrain_cost_model(gen_path, 
+                       demo_name, 
+                       batch_num, 
+                       batch_size = 16,
+                       samples_dir='./default_samples', 
+                       weight_path='./random_init.weights', 
+                       learning_rate=0.001, 
+                       train_iters=200):
+    create_generator(gen_path, demo_name, samples_dir)
+    generator = '{}/{}_gen'.format(samples_dir,demo_name)
 
-    # create_generator('../generator/random_pipeline_generator.cpp','random_pipeline')
+    weight_dir = samples_dir+'/updated.weights'
+    package_dir = os.path.split(os.path.realpath(__file__))[0]
+    run_cmd('cp {}/baseline.weights {}'.format(package_dir,weight_dir))
 
-    # weight_dir = './samples/updated.weights'
-    # # run_cmd('cp ./first_test.weights {}'.format(weight_dir))
-    # # run_cmd('cp ../src/adams2019/baseline.weights {}'.format(weight_dir))
-
-    # # find the starting index
-    # dirs = os.listdir('./samples')
-    # start_idx = -1
-    # for dir_name in dirs:
-    #     if dir_name.startswith('batch_', 0, 6):
-    #         idx = int(dir_name[6::]) 
-    #         if idx > start_idx:
-    #             start_idx = idx
+    # find the starting index
+    start_idx = -1
+    dirs = os.listdir(samples_dir)
+    for dir_name in dirs:
+        if dir_name.startswith('batch_', 0, 6):
+            idx = int(dir_name[6::]) 
+            if idx > start_idx:
+                start_idx = idx
     
-    # for iters in range(start_idx+1,start_idx+101):
-    # # for iters in range(start_idx+1):
-    #     try:
-    #         run_cmd('cp ./first_test.weights {}'.format(weight_dir))
-    #         DIR = './samples/batch_{}'.format(iters)
-    #         run_cmd('mkdir -p {}'.format(DIR))
-    #         for batch in range(16):
-    #             print('Compiling batch_' + str(iters) + '_sample_' + str(batch))
-    #             output_dir = DIR+'/{}'.format(batch)
-    #             hl_seed=iters*10000+batch
-    #             fname = 'random_pipeline_%04d_sample_%04d' % (iters,batch)
-    #             # fname = 'random_pipeline'
-    #             create_schedule(batch,weight_dir,'./samples/random_pipeline_gen','x86-64-linux-avx-avx2-f16c-fma-sse41','random_pipeline',output_dir,fname,hl_seed,iters)
-    #             # create_schedule(batch,weight_dir,'./samples/random_pipeline_gen','arm-64-linux','random_pipeline',output_dir,fname,hl_seed,iters)
+    for iters in range(start_idx+1,start_idx+1+batch_num):
+        try: # 使用try和expect可以在编译或搜索超时时跳到下一个batch
+            run_cmd('cp {} {}'.format(weight_path, weight_dir))
+            DIR = samples_dir+'/batch_{}'.format(iters)
+            run_cmd('mkdir -p {}'.format(DIR))
+            for batch in range(batch_size):
+                print('Compiling batch_' + str(iters) + '_sample_' + str(batch))
+                output_dir = DIR+'/{}'.format(batch)
+                hl_seed=iters*10000+batch
+                fname = '{}_{}_sample_{}'.format(demo_name,iters,batch)
+                create_schedule(batch,weight_dir, generator,'x86-64-linux-avx-avx2-f16c-fma-sse41',demo_name,output_dir,fname,hl_seed,iters)
+                # create_schedule(batch,weight_dir,'./samples/random_pipeline_gen','arm-64-linux','random_pipeline',output_dir,fname,hl_seed,iters)
 
-    #         for batch in range(16):
-    #             print('Benchmarking batch_' + str(iters) + '_sample_' + str(batch))
-    #             output_dir = DIR+'/{}'.format(batch)
-    #             hl_seed=iters*10000+batch
-    #             fname = 'random_pipeline_%04d_sample_%04d' % (iters,batch)
-    #             benchmark(output_dir,'random_pipeline',hl_seed,fname)
-    #     except:
-    #         continue
+            for batch in range(batch_size):
+                print('Benchmarking batch_' + str(iters) + '_sample_' + str(batch))
+                output_dir = DIR+'/{}'.format(batch)
+                hl_seed=iters*10000+batch
+                fname = '{}_{}_sample_{}'.format(demo_name,iters,batch)
+                benchmark(output_dir,demo_name,hl_seed,fname)
+        except:
+            continue
 
-    #     try:
-    #         print("begin retrain")
-    #         # retrain_cost_model(weight_dir,"new.weights",'matmul',epochs=2)          
-    #         cost_model.train_cost_model(DIR, 'first_test')
-    #         print("end retrain")
-    #     except:
-    #         continue
+        try:
+            print("begin retrain")
+            costmodel.train_cost_model(DIR,weight_path,learning_rate = learning_rate, train_iters=train_iters)
+            print("end retrain")
+        except:
+            continue
