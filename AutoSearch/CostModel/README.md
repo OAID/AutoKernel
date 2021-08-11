@@ -7,7 +7,9 @@ CostModel是AutoSearch模块的重要组成部分，它通过一个小型神经�
 ## 快速使用
 
 ```python
+export HALIDE_HOME = <path_to_HALIDE>
 cd tookit
+
 from CostModel import autosampler
 
 gen_path = '../generator/random_pipeline_generator.cpp'
@@ -89,7 +91,30 @@ Weights类的方法有：
 
 该文件能够对给定的算法描述文件调用Halide程序，生成其generator文件以及schedule文件，并进行benchmark，从而得到sample文件。
 
-该文件中的retrain_cost_model()函数是CostModel模块中最终整合了整个训练流程的函数，它接收以下参数：
+
+
+**samples_generator()**函数能自动生成一定batch数量的sample，它接收以下参数：
+
+* gen_path：Halide语言描述的算子或算法文件的路径。
+* demo_name：用户为算子或算法的命名，如matmul。
+* batch_num：本次调用一共训练的batch数量。
+* batch_size：一个batch下的sample数量，默认为16个。
+* samples_dir：储存sample的文件夹，如果不存在则会新建，已存在则会在原有的batch序号后继续添加新的batch。默认为“./default_samples"
+
+
+
+**samples_train()**函数根据给出的sample文件夹路径，对该路径下的所有batch根据用户定义的起点和终点，按照batch编号顺序进行模型训练，它接收以下参数：
+
+* samples_dir：装有batch的文件夹，里面的batch文件夹要按照“batch_”+编号的格式命名。
+* start_idx：训练起始batch编号。训练会从这个编号的batch开始进行，含自身。默认为0。
+* end_idx：训练结束batch编号，训练到这个编号时结束，含自身。默认为-1，执行过程中实际为文件夹中batch最大的编号。
+* weight_path：要训练的.weights文件的路径，若文件不存在则随机初始化，再进行训练。默认为“./random_init.weights"。
+* learning_rate：优化器的学习率，默认为0.001。
+* train_iters：对于每个batch，训练时迭代的次数，默认为200次。
+
+
+
+该文件中的**retrain_cost_model()**函数是CostModel模块中最终整合了整个训练流程的函数，它接收以下参数：
 
 * gen_path：Halide语言描述的算子或算法文件的路径。
 * demo_name：用户为算子或算法的命名，如matmul。
