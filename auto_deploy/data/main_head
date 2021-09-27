@@ -1,0 +1,62 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include "halide_conv.h"
+#include "halide_relu.h"
+#include "halide_maxpool.h"
+#include "halide_matmul.h"
+#include "HalideRuntime.h"
+
+typedef struct Param {
+    int* inp0_dims;
+    int* inp1_dims;
+    int* inp2_dims;
+    int* inp3_dims;
+    int* out0_dims;
+
+    int ksize;
+    int stride;
+    int pad;
+}Param;
+
+void read_float_data(float* data, int size, char* fname)
+{
+    FILE* fp = fopen(fname, "rb");
+    if (!fp) printf("data can not be open");
+    fread(data, sizeof(float), size, fp);
+    fclose(fp);
+}
+void p(float* data,int size)
+{
+    for(int i=0;i<size;i++)
+    printf("%f ",data[i]);
+    printf("\n");
+}
+
+void set_data(struct halide_buffer_t* buf,int* shape,int n,void* data)
+{
+    //dims
+    buf->dimensions=n;
+    int step[4]={1,1,1,1};
+    for(int i=1;i<n;i++)
+    {
+        step[i]=step[i-1]*shape[i-1];
+    }
+    buf->dim=(halide_dimension_t*)malloc(sizeof(halide_dimension_t)*n);
+
+    for(int i=0;i<n;i++)
+    {
+        buf->dim[i].min=0;
+        buf->dim[i].extent=shape[i];
+        buf->dim[i].stride=step[i];
+    }
+ 
+    //type
+    buf->type.bits=32;
+    buf->type.lanes=1;
+    buf->type.code=halide_type_float;
+
+
+    buf->host=(uint8_t*)data;
+    buf->flags=0;
+    buf->device=0;
+}
