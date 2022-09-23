@@ -81,7 +81,7 @@ def generate_compile_file(cfg):
     #demo_name = find_generator_name(cfg.gen)
     if not cfg.autotune:
         # No autotune
-        run_cmd('LD_LIBRARY_PATH=%s/bin %s/demo_gen -g %s -e static_library,c_header,assembly,object,registration -o . target='% (HALIDE_ROOT, CURRENT_DIR, DEMO_NAME)
+        run_cmd('LD_LIBRARY_PATH=%s/lib %s/demo_gen -g %s -e static_library,c_header,assembly,object,registration -o . target='% (HALIDE_DIR, CURRENT_DIR, DEMO_NAME)
         +cfg.target)
     else:
         data_mode = ''
